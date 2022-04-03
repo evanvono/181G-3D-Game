@@ -19,6 +19,9 @@ impl Rect {
     }
 }
 
+/**
+ * Rectangular Prism
+ */
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct RPrism {
     pub pos: Vec3,

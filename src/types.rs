@@ -34,7 +34,7 @@ impl RPrism {
         self.pos.x <= other.pos.x
             && self.pos.y <= other.pos.y
             && self.pos.z <= other.pos.z
-            && &&obr.x <= br.x
+            && &&obr.x <= &&br.x
             && obr.y <= br.y
             && obr.z <= br.z
     }

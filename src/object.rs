@@ -14,7 +14,7 @@ pub enum ObjType {
 }
 
 pub trait Object {
-    fn new(id: usize, container: Option<usize>, volume: RPrism) -> Self;
+    
     fn get_id(&self) -> usize;
     fn get_type(&self) -> ObjType;
     fn get_container(&self)-> Option<usize>;
@@ -29,30 +29,32 @@ pub struct Room{
     pub volume: RPrism,
     pub is_occupied: bool,
 }
-impl Object for Room{
-    fn new(id: usize, container: Option<usize>, volume: RPrism) -> Room{
+impl Room{
+fn new(id: usize, container: Option<usize>, volume: RPrism) -> Room{
         Room{
             id, otype: ObjType::Room, container, volume, is_occupied: false
         }
-    };
+    }
+}
+impl Object for Room{
     fn get_id(&self) -> usize
     { 
         self.id
-    };
+    }
     fn get_type(&self) -> ObjType{
         self.otype
-    };
+    }
     fn get_container(&self)-> Option<usize>
     {
         self.container
-    };
+    }
     fn get_volume(&self)-> RPrism
     {
         self.volume
-    };
+    }
     fn get_pos(&self) -> Vec3{
-        self.volume.pos;
-    };
+        self.volume.pos
+    }
 }
 
 pub struct Clue{
@@ -62,30 +64,32 @@ pub struct Clue{
     pub volume: RPrism,
     pub found: bool,
 }
-impl Object for Clue{
-    fn new(id: usize, container: Option<usize>, volume: RPrism) -> Clue{
+impl Clue{
+     fn new(id: usize, container: Option<usize>, volume: RPrism) -> Clue{
         Clue{
             id, otype: ObjType::Clue, container, volume, found: false
         }
-    };
+    }
+}
+impl Object for Clue{
     fn get_id(&self) -> usize
     { 
         self.id
-    };
+    }
     fn get_type(&self) -> ObjType{
         self.otype
-    };
+    }
     fn get_container(&self)-> Option<usize>
     {
         self.container
-    };
+    }
     fn get_volume(&self)-> RPrism
     {
         self.volume
-    };
+    }
     fn get_pos(&self) -> Vec3{
-        self.volume.pos;
-    };
+        self.volume.pos
+    }
 }
 
 pub struct NotClue{
@@ -94,64 +98,68 @@ pub struct NotClue{
     pub container: Option<usize>,
     pub volume: RPrism,
 }
-impl Object for NotClue{
+impl NotClue{
     fn new(id: usize, container: Option<usize>, volume: RPrism) -> NotClue{
-        Room{
+        NotClue{
             id, otype: ObjType::NotClue, container, volume
         }
-    };
+    }
+}
+impl Object for NotClue{
     fn get_id(&self) -> usize
     { 
         self.id
-    };
+    }
     fn get_type(&self) -> ObjType{
         self.otype
-    };
+    }
     fn get_container(&self)-> Option<usize>
     {
         self.container
-    };
+    }
     fn get_volume(&self)-> RPrism
     {
         self.volume
-    };
+    }
     fn get_pos(&self) -> Vec3{
-        self.volume.pos;
-    };
+        self.volume.pos
+    }
 }
 pub struct Player{
     pub id: usize,
     pub otype: ObjType,
     pub container: Option<usize>,
     pub volume: RPrism,
-    pub film_used: usize,
     pub film_capacity: usize,
-    pub clues_found: Vec<usize>,
+   
 }
-impl Object for Player{
+impl Player{
     fn new(id: usize, container: Option<usize>, volume: RPrism) -> Player{
         Player{
-            id, otype: ObjType::Room, container, volume, film_used: 0, 
-            film_capacity: 10, clues_found: 0
+            id, otype: ObjType::Room, container, volume,
+            film_capacity: 10
         }
-    };
+    }
+}
+impl Object for Player{
+    
     fn get_id(&self) -> usize
     { 
         self.id
-    };
+    }
     fn get_type(&self) -> ObjType{
         self.otype
-    };
+    }
     fn get_container(&self)-> Option<usize>
     {
         self.container
-    };
+    }
     fn get_volume(&self)-> RPrism
     {
         self.volume
-    };
+    }
     fn get_pos(&self) -> Vec3{
-        self.volume.pos;
-    };
+        self.volume.pos
+    }
 }
 

@@ -45,16 +45,16 @@ fn main() -> Result<()> {
 
     let mut cam_x = Arc::new(Mutex::new(0.));
     let mut cam_y = Arc::new(Mutex::new(-2.));
-    let mut cam_to_x = Arc::new(Mutex::new(0.));
-    let mut cam_to_y = Arc::new(Mutex::new(0.));
+    let mut cam_degrees_y = Arc::new(Mutex::new(0.));
+    let mut cam_degrees_x = Arc::new(Mutex::new(0.));
     let mut cam_to_z = Arc::new(Mutex::new(0.));
     let mouse_move_scale = 200.;
 
     engine.play(move |_engine| {
         let mut cam_x_lock = cam_x.lock().unwrap();
         let mut cam_y_lock = cam_y.lock().unwrap();
-        let mut cam_to_x_lock = cam_to_x.lock().unwrap();
-        let mut cam_to_y_lock = cam_to_y.lock().unwrap();
+        let mut cam_degrees_y_lock = cam_degrees_y.lock().unwrap();
+        let mut cam_degrees_x_lock = cam_degrees_x.lock().unwrap();
         let mut cam_to_z_lock = cam_to_z.lock().unwrap();
         
         
@@ -79,12 +79,13 @@ fn main() -> Result<()> {
         let x_diff = mouse_coords.x - prev_mouse_coords.x;
         let y_diff = mouse_coords.y - prev_mouse_coords.y;
 
-        *cam_to_x_lock += (x_diff / mouse_move_scale) as f32;
-        *cam_to_z_lock -= (y_diff / mouse_move_scale) as f32;
+        *cam_degrees_y_lock -= (x_diff / mouse_move_scale) as f32;
+        *cam_degrees_x_lock -= (y_diff / mouse_move_scale) as f32;
 
         let cam_eye = Vec3::new(*cam_x_lock,*cam_y_lock,-10.);
-        let cam_to = Vec3::new(*cam_x_lock + *cam_to_x_lock,*cam_y_lock + *cam_to_y_lock, *cam_to_z_lock);
-        let camera = camera::Camera::look_at(cam_eye, cam_to, Vec3::unit_y());
+        // let cam_to = Vec3::new(*cam_x_lock + *cam_to_x_lock,*cam_y_lock + *cam_to_y_lock, *cam_to_z_lock);
+        let camera = camera::Camera::look_at_degrees(cam_eye, Vec3::unit_y(), (*cam_degrees_y_lock, *cam_degrees_x_lock));
+        // let camera = camera::Camera::look_at(cam_eye, cam_to, Vec3::unit_y());
         _engine.set_camera(camera);
 
     })

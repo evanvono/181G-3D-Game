@@ -42,58 +42,61 @@ fn main() -> Result<()> {
         None,
     );
 
-    
     let cam_degrees_y = Arc::new(Mutex::new(0.));
     let cam_degrees_x = Arc::new(Mutex::new(0.));
 
-    let mouse_move_scale = 10.;
+    let mouse_move_scale = 2.;
     let move_spd = 1.0;
 
     // mutex / lock it, modify it and create new eye each time
-    let cam_pos = Arc::new(Mutex::new(Vec3::new(0.,-2., -10.)));
+    let cam_pos = Arc::new(Mutex::new(Vec3::new(0., -2., -10.)));
     let up = Vec3::unit_y();
-
 
     engine.play(move |_engine| {
         let input = _engine.get_inputs();
 
-        let mouse_coords = input.get_mouse_position();
-        let prev_mouse_coords = input.get_prev_mouse_position();
-
-        let x_diff = mouse_coords.x - prev_mouse_coords.x;
-        let y_diff = mouse_coords.y - prev_mouse_coords.y;
+        let delta = input.get_mouse_delta();
 
         let mut cam_degrees_x_lock = cam_degrees_x.lock().unwrap();
         let mut cam_degrees_y_lock = cam_degrees_y.lock().unwrap();
 
-        *cam_degrees_x_lock -= (x_diff / mouse_move_scale) as f32;
-        *cam_degrees_y_lock += (y_diff / mouse_move_scale) as f32;
+        *cam_degrees_x_lock -= (delta.x / mouse_move_scale) as f32;
+        *cam_degrees_y_lock += (delta.y / mouse_move_scale) as f32;
 
-        let new_cam: camera::Camera;
-        let mut cam_pos_lock = cam_pos.lock().unwrap();
-
-
-        if input.is_key_down(VirtualKeyCode::Up) {
-            let cam_new = camera::Camera::move_direction(&mut cam_pos_lock, up, (*cam_degrees_x_lock, *cam_degrees_y_lock), move_spd, camera::Direction::Forward);
-            new_cam = cam_new;
-        } else if input.is_key_down(VirtualKeyCode::Down) {
-            let cam_new = camera::Camera::move_direction(&mut cam_pos_lock, up, (*cam_degrees_x_lock, *cam_degrees_y_lock), move_spd, camera::Direction::Backward);
-            new_cam = cam_new;
-        } else if input.is_key_down(VirtualKeyCode::Left) {
-            let cam_new = camera::Camera::move_direction(&mut cam_pos_lock, up, (*cam_degrees_x_lock, *cam_degrees_y_lock), move_spd, camera::Direction::Left);
-            new_cam = cam_new;
-        } else if input.is_key_down(VirtualKeyCode::Right) {
-            let cam_new = camera::Camera::move_direction(&mut cam_pos_lock, up, (*cam_degrees_x_lock, *cam_degrees_y_lock), move_spd, camera::Direction::Right);
-            new_cam = cam_new;
-        } else {
-            let cam_new = camera::Camera::move_direction(&mut cam_pos_lock, up, (*cam_degrees_x_lock, *cam_degrees_y_lock), 0., camera::Direction::Forward);
-            new_cam = cam_new;
+        if *cam_degrees_y_lock > 89.999 {
+            *cam_degrees_y_lock = 89.999
         }
-
+        if *cam_degrees_y_lock < -89.999 {
+            *cam_degrees_y_lock = -89.999
+        }
+        let mut cam_pos_lock = cam_pos.lock().unwrap();
+        let mut is_moving = false;
+        let mut directions: Vec<camera::Direction> = Vec::new();
+        if input.is_key_down(VirtualKeyCode::Up) {
+            directions.push(camera::Direction::Forward);
+            is_moving = true;
+        }
+        if input.is_key_down(VirtualKeyCode::Down) {
+            directions.push(camera::Direction::Backward);
+            is_moving = true;
+        }
+        if input.is_key_down(VirtualKeyCode::Left) {
+            directions.push(camera::Direction::Left);
+            is_moving = true;
+        }
+        if input.is_key_down(VirtualKeyCode::Right) {
+            directions.push(camera::Direction::Right);
+            is_moving = true;
+        }
+        let new_cam = camera::Camera::move_direction(
+            &mut cam_pos_lock,
+            up,
+            (*cam_degrees_x_lock, *cam_degrees_y_lock),
+            if is_moving { move_spd } else { 0. },
+            directions,
+        );
         _engine.set_camera(new_cam);
     })
 }
 
-fn move_camera() {
-
-}
+fn move_camera() {}

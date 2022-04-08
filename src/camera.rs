@@ -31,17 +31,17 @@ impl Camera {
         Self::look_at(eye, at, up)
     }
 
-    pub fn move_direction(eye: &mut Vec3, up: Vec3, deg: (f32, f32), distance: f32, direction: Direction) -> Camera {
+    pub fn move_direction(eye: &mut Vec3, up: Vec3, deg: (f32, f32), distance: f32, directions: Vec<Direction>) -> Camera {
         let mut theta = deg.0;
-        let t1:f32 = 40.0f32.to_radians().sin();
-        let t2:f32 = -320.0f32.to_radians().sin();
-        dbg!(deg);
-        match direction {
-            Direction::Right => theta -= 90.0,
-            Direction:: Left => theta += 90.0,
-            Direction::Backward => theta += 180.0,
-            _ => {}
-        }
+        directions.iter().for_each(|direction| {
+            match direction {
+                Direction::Right => theta -= 90.0,
+                Direction:: Left => theta += 90.0,
+                Direction::Backward => theta += 180.0,
+                _ => {}
+            }
+        });
+
         eye.z += distance * theta.to_radians().cos();
         eye.x += distance * theta.to_radians().sin();
         let new_eye = Vec3::new(eye.x, eye.y, eye.z);

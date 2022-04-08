@@ -1,3 +1,4 @@
+use winit::event::Event::DeviceEvent;
 use vulkano::sync::GpuFuture;
 use winit::window::WindowBuilder;
 use winit::event::{Event, WindowEvent, MouseButton};
@@ -205,6 +206,12 @@ impl Engine {
                     ..
                 } => {
                     self.input.handle_left_mouse_event(button_state)
+                }
+                Event::DeviceEvent {
+                    event: winit::event::DeviceEvent::MouseMotion { delta }
+                    , ..
+                } => {
+                    self.input.handle_cursor_motion(delta)
                 }
                 Event::WindowEvent {
                     event: WindowEvent::CursorMoved {

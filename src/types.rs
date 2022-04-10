@@ -19,6 +19,14 @@ impl Rect {
     }
 }
 
+#[derive(Debug)]
+pub enum Direction {
+    Forward,
+    Backward,
+    Left,
+    Right
+}
+
 /**
  * Rectangular Prism
  */

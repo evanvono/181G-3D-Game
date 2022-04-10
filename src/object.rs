@@ -5,6 +5,7 @@ pub use ultraviolet::mat::Mat4;
 pub use ultraviolet::rotor::Rotor3;
 pub use ultraviolet::transform::Isometry3;
 pub use ultraviolet::vec::{Vec2, Vec3};
+use crate::camera;
 
 pub enum ObjType {
     Room,
@@ -20,6 +21,7 @@ pub trait Object {
     fn get_container(&self)-> Option<usize>;
     fn get_volume(&self)-> RPrism;
     fn get_pos(&self) -> Vec3;
+    fn set_pos(&self,pos:Vec3);
 }
 
 pub struct Room{
@@ -54,6 +56,9 @@ impl Object for Room{
     }
     fn get_pos(&self) -> Vec3{
         self.volume.pos
+    }
+    fn set_pos(&self, pos: Vec3) {
+        self.volume.pos = pos
     }
 }
 
@@ -90,6 +95,9 @@ impl Object for Clue{
     fn get_pos(&self) -> Vec3{
         self.volume.pos
     }
+    fn set_pos(&self, pos: Vec3) {
+        self.volume.pos = pos
+    }
 }
 
 pub struct NotClue{
@@ -124,6 +132,9 @@ impl Object for NotClue{
     fn get_pos(&self) -> Vec3{
         self.volume.pos
     }
+    fn set_pos(&self, pos: Vec3) {
+        self.volume.pos = pos
+    }
 }
 pub struct Player{
     pub id: usize,
@@ -131,14 +142,23 @@ pub struct Player{
     pub container: Option<usize>,
     pub volume: RPrism,
     pub film_capacity: usize,
-   
+    pub perspective_deg: (f32, f32)
 }
 impl Player{
-    fn new(id: usize, container: Option<usize>, volume: RPrism) -> Player{
+    pub fn new(id: usize, container: Option<usize>, volume: RPrism, perspective_deg: (f32, f32)) -> Player{
         Player{
             id, otype: ObjType::Room, container, volume,
-            film_capacity: 10
+            film_capacity: 10, perspective_deg
         }
+    }
+    pub fn get_camera(&self) -> camera::Camera {
+        camera::Camera::look_at_degrees(self.get_pos(), Vec3::unit_y(), self.get_deg())
+    }
+    pub fn get_deg(&self) -> (f32,f32) {
+        self.perspective_deg
+    }
+    pub fn set_deg(&self, deg: (f32,f32)) {
+        self.perspective_deg = deg
     }
 }
 impl Object for Player{
@@ -160,6 +180,9 @@ impl Object for Player{
     }
     fn get_pos(&self) -> Vec3{
         self.volume.pos
+    }
+    fn set_pos(&self, pos: Vec3) {
+        self.volume.pos = pos;
     }
 }
 

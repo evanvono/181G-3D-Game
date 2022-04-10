@@ -7,13 +7,7 @@ pub struct Camera {
     ratio:f32,
     z_far:f32
 }
-#[derive(Debug)]
-pub enum Direction {
-    Forward,
-    Backward,
-    Left,
-    Right
-}
+
 impl Camera {
     pub fn look_at(eye:Vec3, at:Vec3, up:Vec3) -> Camera {
         Camera{eye, at, up, fov:PI/2.0, ratio:4.0/3.0, z_far:1000.0}
@@ -30,25 +24,6 @@ impl Camera {
         let at = Vec3 { x, y, z };
         Self::look_at(eye, at, up)
     }
-
-    pub fn move_direction(eye: &mut Vec3, up: Vec3, deg: (f32, f32), distance: f32, directions: Vec<Direction>) -> Camera {
-        let mut theta = deg.0;
-        directions.iter().for_each(|direction| {
-            match direction {
-                Direction::Right => theta -= 90.0,
-                Direction:: Left => theta += 90.0,
-                Direction::Backward => theta += 180.0,
-                _ => {}
-            }
-        });
-
-        eye.z += distance * theta.to_radians().cos();
-        eye.x += distance * theta.to_radians().sin();
-        let new_eye = Vec3::new(eye.x, eye.y, eye.z);
-
-        Self::look_at_degrees(new_eye, up, deg)
-    }
-
 
     pub fn as_matrix(&self) -> Mat4 {
         // projection * view

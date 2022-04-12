@@ -14,6 +14,8 @@ mod object;
 mod renderer;
 mod types;
 mod vulkan;
+mod animation;
+mod assets;
 
 const DT: f32 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;

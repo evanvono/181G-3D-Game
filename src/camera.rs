@@ -30,4 +30,8 @@ impl Camera {
         let proj = ultraviolet::projection::perspective_vk(self.fov, self.ratio, 0.01, self.z_far);
         proj * Mat4::look_at(self.eye, self.at, self.up)
     }
+    
+    pub fn set_ratio(&mut self, r: f32) {
+        self.ratio = r;
+    }
 }

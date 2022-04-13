@@ -6,7 +6,7 @@ pub use ultraviolet::rotor::Rotor3;
 pub use ultraviolet::transform::Isometry3;
 pub use ultraviolet::vec::{Vec2, Vec3};
 use crate::camera;
-use crate::engine;
+use crate::input;
 use winit::event::VirtualKeyCode;
 
 
@@ -165,8 +165,7 @@ impl Player{
         self.perspective_deg = deg
     }
 
-    pub fn move_with_input(&self, eng: &engine::Engine) {
-        let input = eng.get_inputs();
+    pub fn move_with_input(&self, input: &input::Input) {
         let delta = input.get_mouse_delta();
     
         let mut is_moving = false;
@@ -191,8 +190,8 @@ impl Player{
     
         let (mut cam_degrees_x, mut cam_degrees_y) = self.get_deg();
     
-        cam_degrees_x = cam_degrees_x - (delta.x as f32 / input.get_mouse_move_scale());
-        cam_degrees_y = cam_degrees_y - (delta.y as f32 / input.get_mouse_move_scale());
+        cam_degrees_x = cam_degrees_x - (delta.x as f32 / input::Input::get_mouse_move_scale());
+        cam_degrees_y = cam_degrees_y - (delta.y as f32 / input::Input::get_mouse_move_scale());
     
         if cam_degrees_y > 89.999 {
             cam_degrees_y = 89.999

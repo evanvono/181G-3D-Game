@@ -83,7 +83,7 @@ impl Input {
         winit::dpi::PhysicalPosition { x: self.mouse_delta.0, y: self.mouse_delta.1 }
     }
 
-    pub fn get_mouse_move_scale() -> f32 {
+    pub(crate) fn get_mouse_move_scale() -> f32 {
         MOUSE_MOVE_SCALE
     }
 

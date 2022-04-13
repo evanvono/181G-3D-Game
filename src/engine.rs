@@ -1,3 +1,5 @@
+use crate::input::Input;
+use crate::Isometry3;
 use crate::animation;
 use crate::assets::{self, Assets};
 use crate::renderer;
@@ -9,6 +11,8 @@ use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use crate::input;
+use crate::camera::Camera;
+
 
 pub trait GameThing:'static {}
 
@@ -75,7 +79,6 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(ws: WindowSettings, dt: f64) -> Self {
-        use crate::camera::Camera;
         use crate::types::Vec3;
         let event_loop = EventLoop::new();
         let wb = WindowBuilder::new()
@@ -104,7 +107,79 @@ impl Engine {
             last_frame: std::time::Instant::now(),
         }
     }
-    pub fn play(mut self, mut w: impl World + 'static) -> Result<()> {
+    pub fn set_camera(&mut self, cam:Camera) {
+        self.render_states = [
+            crate::renderer::RenderState::new(cam),
+            crate::renderer::RenderState::new(cam),
+        ]
+    }
+    pub fn play(mut self, f:impl Fn(&mut Self) + 'static) -> Result<()> {
+        let ev = self.event_loop.take().unwrap();
+        ev.run(move |event, _, control_flow| {
+            match event {
+                // Nested match patterns are pretty useful---see if you can figure out what's going on in this match.
+                Event::WindowEvent {
+                    event: WindowEvent::CloseRequested,
+                    ..
+                } => {
+                    *control_flow = ControlFlow::Exit;
+                }
+                Event::WindowEvent {
+                    event: WindowEvent::Resized(_),
+                    ..
+                } => {
+                    self.vulkan.recreate_swapchain = true;
+                }
+                // NewEvents: Let's start processing events.
+                Event::NewEvents(_) => {}
+                // WindowEvent->KeyboardInput: Keyboard input!
+                Event::WindowEvent {
+                    event:
+                        WindowEvent::KeyboardInput {
+                            input: in_event, ..
+                        },
+                    ..
+                } => {
+                    self.input.handle_key_event(in_event);
+                }
+                Event::WindowEvent {
+                    event: WindowEvent::MouseInput {
+                        state: button_state,
+                        button: MouseButton::Left,
+                        ..
+                    }, 
+                    ..
+                } => {
+                    self.input.handle_left_mouse_event(button_state)
+                }
+                Event::DeviceEvent {
+                    event: winit::event::DeviceEvent::MouseMotion { delta }
+                    , ..
+                } => {
+                    self.input.handle_cursor_motion(delta)
+                }
+                Event::WindowEvent {
+                    event: WindowEvent::CursorMoved {
+                        position,
+                        ..
+                    }, 
+                    ..
+                } => {
+                    self.input.handle_cursor_moved_event(position)
+                }
+                Event::MainEventsCleared => {
+                    // track DT, accumulator, ...
+                    {
+                        f(&mut self);
+                        self.input.next_frame();
+                    }
+                    self.render3d();
+                }
+                _ => (),
+            }
+        });
+    }
+    pub fn play_world(mut self, mut w: impl World + 'static) -> Result<()> {
         let ev = self.event_loop.take().unwrap();
         self.last_frame = std::time::Instant::now();
         ev.run(move |event, _, control_flow| {
@@ -292,6 +367,9 @@ impl Engine {
     }
     pub fn load_flat(&mut self, path: &std::path::Path) -> Result<Rc<renderer::flat::Model>> {
         self.assets.load_flat(path, &mut self.vulkan)
+    }
+    pub fn get_inputs(&self) -> Input {
+        self.input.clone()
     }
 }
 

@@ -34,4 +34,12 @@ impl Camera {
     pub fn set_ratio(&mut self, r: f32) {
         self.ratio = r;
     }
+
+    // pub fn interpolate(&self, other: &Self, r: f32) -> Self {
+    //     Self {
+    //         transform: self.transform.lerp(&other.transform, r),
+    //         fov: self.fov.lerp(other.fov, r),
+    //         ratio: self.ratio.lerp(other.ratio, r),
+    //     }
+    // }
 }

@@ -1,6 +1,7 @@
 use crate::image::Vec2i;
 use winit::event::ElementState;
 use winit::event::VirtualKeyCode;
+const MOUSE_MOVE_SCALE: f32 = 2.;
 
 #[derive(Debug, Clone)]
 pub struct Input {
@@ -80,6 +81,10 @@ impl Input {
 
     pub fn get_mouse_delta(&self) -> winit::dpi::PhysicalPosition<f64> {
         winit::dpi::PhysicalPosition { x: self.mouse_delta.0, y: self.mouse_delta.1 }
+    }
+
+    pub fn get_mouse_move_scale() -> f32 {
+        MOUSE_MOVE_SCALE
     }
 
 }

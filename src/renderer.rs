@@ -57,7 +57,7 @@ impl RenderState {
             let v0 = rs1.textured.get(k).unwrap_or(v1);
             self.textured.insert(*k, v0.interpolate(v1, r));
         }
-        self.camera = rs1.camera.interpolate(&rs2.camera, r);
+        // self.camera = rs1.camera.interpolate(&rs2.camera, r);
     }
 
     pub fn render_skinned(

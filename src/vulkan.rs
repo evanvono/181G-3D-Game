@@ -287,4 +287,11 @@ impl Vulkan {
             }
         }
     }
+    pub fn wait_for(&mut self, f: Box<dyn GpuFuture>) {
+        let old_fut = self.previous_frame_end.take();
+        self.previous_frame_end = match old_fut {
+            None => Some(f),
+            Some(old_fut) => Some(Box::new(old_fut.join(f))),
+        };
+    }
 }

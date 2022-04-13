@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
+use crate::engine::Engine;
+use crate::engine::WindowSettings;
+pub use color_eyre;
 use color_eyre::eyre::Result;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
-use winit::event::VirtualKeyCode;
 
 mod camera;
 mod engine;
@@ -17,17 +19,16 @@ mod vulkan;
 mod animation;
 mod assets;
 
-const DT: f32 = 1.0 / 60.0;
+const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
-const MOUSE_MOVE_SCALE: f32 = 2.;
-const PLAYER_MOVE_SPD: f32 = 1.0;
 use object::*;
 use types::*;
 
 #[derive(Debug)]
 struct GenericGameThing {}
 impl engine::GameThing for GenericGameThing {}
+
 
 pub struct World {
     rooms: Vec<object::Room>,
@@ -79,6 +80,23 @@ impl GameState {
     }
 }
 
+
+fn main() -> Result<()> {
+    color_eyre::install()?;
+
+    let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
+    // engine.set_camera(camera::Camera::look_at(
+    //     Vec3::new(0., -2., -10.),
+    //     Vec3::zero(),
+    //     Vec3::unit_y(),
+    // ));
+    let cam = camera::Camera::look_at(
+        Vec3::new(0., -2., -10.),
+        Vec3::zero(),
+        Vec3::unit_y(),
+    );
+}
+
 /**
  * try adding ibjec tot world
  * try getting to render
@@ -88,6 +106,7 @@ impl GameState {
 * side note: clues can maybe have descriptions to explaine
 after find all clues, some type of "Here's what happened" -> cutscene of crime *cries in animation*
 */
+/*
 fn main() -> Result<()> {
     let world = World::new(vec![], vec![]); //figure this out
     let game_state = GameState::new(world, START_ROOM, GOAL_CLUES);
@@ -96,8 +115,7 @@ fn main() -> Result<()> {
 
     // If GameThing variants differ widely in size, consider using
     // Box<GameThing>
-    let mut engine: engine::Engine = engine::Engine::new(engine::WindowSettings::default());
-
+    let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
     engine.set_camera(camera::Camera::look_at(
         Vec3::new(0., -2., -10.),
         Vec3::zero(),
@@ -118,67 +136,14 @@ fn main() -> Result<()> {
         );
 
     */
+
+    
     engine.play(move |_engine| {
         let player = game_state.player;
-        move_player(&_engine, &player);
+        player.move_with_input(&_engine);
 
         _engine.set_camera(player.get_camera());
     })
 }
-
+*/
 // TODO: Break this up? Move to Player?
-fn move_player(eng: &engine::Engine, player: &Player) {
-    let input = eng.get_inputs();
-    let delta = input.get_mouse_delta();
-
-    let mut is_moving = false;
-    let mut directions: Vec<Direction> = Vec::new();
-
-    if input.is_key_down(VirtualKeyCode::Up) {
-        directions.push(Direction::Forward);
-        is_moving = true;
-    }
-    if input.is_key_down(VirtualKeyCode::Down) {
-        directions.push(Direction::Backward);
-        is_moving = true;
-    }
-    if input.is_key_down(VirtualKeyCode::Left) {
-        directions.push(Direction::Left);
-        is_moving = true;
-    }
-    if input.is_key_down(VirtualKeyCode::Right) {
-        directions.push(Direction::Right);
-        is_moving = true;
-    }
-
-    let (mut cam_degrees_x, mut cam_degrees_y) = player.get_deg();
-
-    cam_degrees_x = cam_degrees_x - (delta.x as f32 / MOUSE_MOVE_SCALE);
-    cam_degrees_y = cam_degrees_y - (delta.y as f32 / MOUSE_MOVE_SCALE);
-
-    if cam_degrees_y > 89.999 {
-        cam_degrees_y = 89.999
-    }
-    if cam_degrees_y < -89.999 {
-        cam_degrees_y = -89.999
-    }
-
-    let mut theta = cam_degrees_x;
-    directions.iter().for_each(|direction| {
-        match direction {
-            Direction::Right => theta -= 90.0,
-            Direction:: Left => theta += 90.0,
-            Direction::Backward => theta += 180.0,
-            _ => ()
-        }
-    });
-
-    let distance = if is_moving { PLAYER_MOVE_SPD } else { 0. };
-
-    let pos = player.get_pos();
-    pos.z += (distance * theta.to_radians().cos()) as f32;
-    pos.x += (distance * theta.to_radians().sin()) as f32;
-    
-    player.set_pos(pos);
-    player.set_deg((cam_degrees_x, cam_degrees_y));
-}

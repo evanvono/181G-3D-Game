@@ -25,7 +25,7 @@ use types::*;
 const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
-const PLAYER_MOVE_SPD: f32 = 10.;
+const PLAYER_MOVE_SPD: f32 = 0.25;
 
 #[derive(Debug)]
 struct GenericGameThing {}
@@ -154,22 +154,24 @@ fn main() -> Result<()> {
         flats: vec![],
     };
 
-    // let flat_model = engine.load_flat(std::path::Path::new("content/livingroom.fbx"))?;
-    // stuff.flats.push(Flat {
-    //     trf: Similarity3::new(Vec3::new(0.0, 0.0, -10.0), Rotor3::identity(), 1.0),
-    //     model: flat_model,
-    // });
 
-    let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;
-    let meshes = engine.load_textured(
-        std::path::Path::new("content/characterSmall.fbx")
-    )?;
-    let robot = engine.create_textured_model(meshes, vec![tex]);
 
-    stuff.textured.push(Textured {
-        trf: Similarity3::new(Vec3::new(0.0, 0.0, -10.0), Rotor3::identity(), 5.0),
-        model: robot,
+    let flat_model = engine.load_flat(std::path::Path::new("content/livingroom.glb"))?;
+    stuff.flats.push(Flat {
+        trf: Similarity3::new(Vec3::new(0.0, 0.0, 10.0), Rotor3::from_rotation_yz(90.0f32.to_radians()), 1.0),
+        model: flat_model,
     });
+
+    // let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;
+    // let meshes = engine.load_textured(
+    //     std::path::Path::new("content/characterSmall.fbx")
+    // )?;
+    // let robot = engine.create_textured_model(meshes, vec![tex]);
+
+    // stuff.textured.push(Textured {
+    //     trf: Similarity3::new(Vec3::new(0.0, 0.0, -10.0), Rotor3::identity(), 5.0),
+    //     model: robot,
+    // });
     let game_state = GameState::new(stuff, START_ROOM, GOAL_CLUES);
     engine.play_world(game_state)
 }

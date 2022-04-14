@@ -9,6 +9,8 @@ use crate::camera;
 use crate::input;
 use winit::event::VirtualKeyCode;
 
+const PLAYER_HEIGHT: f32 = 2.;
+
 #[derive(Copy, Clone)]
 pub enum ObjType {
     Room,
@@ -156,7 +158,9 @@ impl Player{
         }
     }
     pub fn get_camera(&self) -> camera::Camera {
-        camera::Camera::look_at_degrees(self.get_pos(), Vec3::unit_y(), self.get_deg())
+        let player_at = self.get_pos();
+        let at = Vec3::new(player_at.x, PLAYER_HEIGHT, player_at.z);
+        camera::Camera::look_at_degrees(at, Vec3::unit_y(), self.get_deg())
     }
     pub fn get_deg(&self) -> (f32,f32) {
         self.perspective_deg

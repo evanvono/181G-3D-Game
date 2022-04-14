@@ -149,10 +149,10 @@ pub struct Player{
     pub move_spd: f32
 }
 impl Player{
-    pub fn new(id: usize, container: Option<usize>, volume: RPrism, perspective_deg: (f32, f32)) -> Player{
+    pub fn new(id: usize, container: Option<usize>, volume: RPrism, perspective_deg: (f32, f32), move_spd: f32) -> Player{
         Player{
             id, otype: ObjType::Room, container, volume,
-            film_capacity: 10, perspective_deg, move_spd: 1.0
+            film_capacity: 10, perspective_deg, move_spd
         }
     }
     pub fn get_camera(&self) -> camera::Camera {
@@ -175,36 +175,36 @@ impl Player{
             directions.push(Direction::Forward);
             is_moving = true;
         }
-        if input.is_key_down(VirtualKeyCode::Down) || input.is_key_down(VirtualKeyCode::S) {
+        else if input.is_key_down(VirtualKeyCode::Down) || input.is_key_down(VirtualKeyCode::S) {
             directions.push(Direction::Backward);
             is_moving = true;
         }
-        if input.is_key_down(VirtualKeyCode::Left) || input.is_key_down(VirtualKeyCode::A) {
+        else if input.is_key_down(VirtualKeyCode::Right) || input.is_key_down(VirtualKeyCode::D) {
             directions.push(Direction::Left);
             is_moving = true;
         }
-        if input.is_key_down(VirtualKeyCode::Right) || input.is_key_down(VirtualKeyCode::D) {
+        else if input.is_key_down(VirtualKeyCode::Left) || input.is_key_down(VirtualKeyCode::A) {
             directions.push(Direction::Right);
             is_moving = true;
         }
     
         let (mut cam_degrees_x, mut cam_degrees_y) = self.get_deg();
     
-        cam_degrees_x = cam_degrees_x - (delta.x as f32 / input::Input::get_mouse_move_scale());
-        cam_degrees_y = cam_degrees_y - (delta.y as f32 / input::Input::get_mouse_move_scale());
+        cam_degrees_x -= delta.x as f32 / input::Input::get_mouse_move_scale();
+        cam_degrees_y += delta.y as f32 / input::Input::get_mouse_move_scale();
     
-        if cam_degrees_y > 89.999 {
-            cam_degrees_y = 89.999
+        if cam_degrees_y > 89.0 {
+            cam_degrees_y = 89.0
         }
-        if cam_degrees_y < -89.999 {
-            cam_degrees_y = -89.999
+        if cam_degrees_y < -89.0 {
+            cam_degrees_y = -89.0
         }
     
         let mut theta = cam_degrees_x;
         directions.iter().for_each(|direction| {
             match direction {
-                Direction::Right => theta -= 90.0,
-                Direction:: Left => theta += 90.0,
+                Direction::Left => theta -= 90.0,
+                Direction::Right => theta += 90.0,
                 Direction::Backward => theta += 180.0,
                 _ => ()
             }

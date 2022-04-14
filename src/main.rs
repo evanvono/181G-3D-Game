@@ -25,6 +25,7 @@ use std::rc::Rc;
 const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
+const PLAYER_MOVE_SPD: f32 = 10.;
 
 
 #[derive(Debug)]
@@ -101,7 +102,7 @@ impl GameState {
         GameState {
             stuff,
             current_room,
-            player: object::Player::new(0, Some(current_room), player_vol(), (0.,0.)), //this is temp CHANGE
+            player: object::Player::new(0, Some(current_room), player_vol(), (0.,0.), PLAYER_MOVE_SPD), //this is temp CHANGE
             film_used: 0,
             clues_found: Vec::new(),
             goal_clues,
@@ -118,7 +119,6 @@ impl engine::World for GameState {
     }
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) { 
         let camera = self.player.get_camera();
-        dbg!(camera);
         rs.set_camera(camera);
 
         // for (obj_i, obj) in self.things.iter_mut().enumerate() {

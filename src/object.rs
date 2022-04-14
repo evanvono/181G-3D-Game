@@ -9,7 +9,7 @@ use crate::camera;
 use crate::input;
 use winit::event::VirtualKeyCode;
 
-
+#[derive(Copy, Clone)]
 pub enum ObjType {
     Room,
     Clue,
@@ -24,7 +24,7 @@ pub trait Object {
     fn get_container(&self)-> Option<usize>;
     fn get_volume(&self)-> RPrism;
     fn get_pos(&self) -> Vec3;
-    fn set_pos(&self,pos:Vec3);
+    fn set_pos(&mut self,pos:Vec3);
 }
 
 pub struct Room{
@@ -60,8 +60,8 @@ impl Object for Room{
     fn get_pos(&self) -> Vec3{
         self.volume.pos
     }
-    fn set_pos(&self, pos: Vec3) {
-        self.volume.pos = pos
+    fn set_pos(&mut self, pos: Vec3) {
+        self.volume.pos = pos;
     }
 }
 
@@ -98,7 +98,7 @@ impl Object for Clue{
     fn get_pos(&self) -> Vec3{
         self.volume.pos
     }
-    fn set_pos(&self, pos: Vec3) {
+    fn set_pos(&mut self, pos: Vec3) {
         self.volume.pos = pos
     }
 }
@@ -135,7 +135,7 @@ impl Object for NotClue{
     fn get_pos(&self) -> Vec3{
         self.volume.pos
     }
-    fn set_pos(&self, pos: Vec3) {
+    fn set_pos(&mut self, pos: Vec3) {
         self.volume.pos = pos
     }
 }
@@ -161,11 +161,11 @@ impl Player{
     pub fn get_deg(&self) -> (f32,f32) {
         self.perspective_deg
     }
-    pub fn set_deg(&self, deg: (f32,f32)) {
+    pub fn set_deg(&mut self, deg: (f32,f32)) {
         self.perspective_deg = deg
     }
 
-    pub fn move_with_input(&self, input: &input::Input) {
+    pub fn move_with_input(&mut self, input: &input::Input) {
         let delta = input.get_mouse_delta();
     
         let mut is_moving = false;
@@ -212,7 +212,7 @@ impl Player{
     
         let distance = if is_moving { self.move_spd } else { 0. };
     
-        let pos = self.get_pos();
+        let mut pos = self.get_pos();
         pos.z += (distance * theta.to_radians().cos()) as f32;
         pos.x += (distance * theta.to_radians().sin()) as f32;
         
@@ -240,7 +240,7 @@ impl Object for Player{
     fn get_pos(&self) -> Vec3{
         self.volume.pos
     }
-    fn set_pos(&self, pos: Vec3) {
+    fn set_pos(&mut self, pos: Vec3) {
         self.volume.pos = pos;
     }
 }

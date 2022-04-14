@@ -26,6 +26,8 @@ impl Input {
         }
     }
     pub fn is_key_down(&self, kc: VirtualKeyCode) -> bool {
+        dbg!(kc);
+        dbg!(self.now_keys[kc as usize]);
         self.now_keys[kc as usize]
     }
     pub fn is_key_up(&self, kc: VirtualKeyCode) -> bool {

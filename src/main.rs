@@ -111,13 +111,15 @@ impl GameState {
 
 impl engine::World for GameState {
     fn update(&mut self, input: &input::Input, _assets: &mut assets::Assets) { 
-        let player = self.player;
-        player.move_with_input(&input);
+        let player = &mut self.player;
+        player.move_with_input(input);
 
 
     }
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) { 
-        rs.set_camera(self.player.get_camera());
+        let camera = self.player.get_camera();
+        dbg!(camera);
+        rs.set_camera(camera);
 
         // for (obj_i, obj) in self.things.iter_mut().enumerate() {
         //     rs.render_skinned(obj.model.clone(), obj.animation, obj.state, obj.trf, obj_i);
@@ -138,17 +140,14 @@ fn main() -> Result<()> {
     color_eyre::install()?;
 
     let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
-    // engine.set_camera(camera::Camera::look_at(
-    //     Vec3::new(0., -2., -10.),
-    //     Vec3::zero(),
-    //     Vec3::unit_y(),
-    // ));
+
     let camera = camera::Camera::look_at(
         Vec3::new(0., -2., -10.),
         Vec3::zero(),
         Vec3::unit_y(),
     );
-    let mut stuff = GameStuff {rooms: vec![], objects: vec![], textured: vec![]};
+    engine.set_camera(camera);
+    let mut stuff = GameStuff {rooms: vec![], objects: HashMap::from([]), textured: vec![]};
     let tex = engine.load_texture(std::path::Path::new("content/robot.png"))?;
     let meshes = engine.load_textured(
         std::path::Path::new("content/characterSmall.fbx")

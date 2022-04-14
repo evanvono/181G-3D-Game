@@ -1,4 +1,5 @@
 use crate::types::*;
+#[derive(Clone, Copy, Debug)]
 pub struct Camera {
     eye:Vec3, // Position
     at:Vec3, // Where we're looking

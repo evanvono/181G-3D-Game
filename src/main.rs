@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
 
+mod animation;
+mod assets;
 mod camera;
 mod engine;
 mod image;
@@ -16,17 +18,14 @@ mod object;
 mod renderer;
 mod types;
 mod vulkan;
-mod animation;
-mod assets;
 use object::*;
-use types::*;
 use std::rc::Rc;
+use types::*;
 
 const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 10.;
-
 
 #[derive(Debug)]
 struct GenericGameThing {}
@@ -61,8 +60,9 @@ struct Textured {
 pub struct GameStuff {
     rooms: Vec<object::Room>,
     objects: HashMap<usize, Box<dyn object::Object>>, //key usize is the object id; to get room call contiainer
-                                                      //osborn has work arounds??? ^^^
-    textured: Vec<Textured> 
+    //osborn has work arounds??? ^^^
+    textured: Vec<Textured>,
+    flats: Vec<Flat>,
 }
 impl GameStuff {
     // fn new(rooms: Vec<object::Room>, objects: HashMap<usize, Box<dyn object::Object>>) -> GameStuff {
@@ -102,7 +102,13 @@ impl GameState {
         GameState {
             stuff,
             current_room,
-            player: object::Player::new(0, Some(current_room), player_vol(), (0.,0.), PLAYER_MOVE_SPD), //this is temp CHANGE
+            player: object::Player::new(
+                0,
+                Some(current_room),
+                player_vol(),
+                (0., 0.),
+                PLAYER_MOVE_SPD,
+            ), //this is temp CHANGE
             film_used: 0,
             clues_found: Vec::new(),
             goal_clues,
@@ -111,13 +117,11 @@ impl GameState {
 }
 
 impl engine::World for GameState {
-    fn update(&mut self, input: &input::Input, _assets: &mut assets::Assets) { 
+    fn update(&mut self, input: &input::Input, _assets: &mut assets::Assets) {
         let player = &mut self.player;
         player.move_with_input(input);
-
-
     }
-    fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) { 
+    fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) {
         let camera = self.player.get_camera();
         rs.set_camera(camera);
 
@@ -127,9 +131,9 @@ impl engine::World for GameState {
         // for (s_i, s) in self.sprites.iter_mut().enumerate() {
         //     rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
         // }
-        // for (m_i, m) in self.flats.iter_mut().enumerate() {
-        //     rs.render_flat(m.model.clone(), m.trf, m_i);
-        // }
+        for (m_i, m) in self.stuff.flats.iter_mut().enumerate() {
+            rs.render_flat(m.model.clone(), m.trf, m_i);
+        }
         for (t_i, t) in self.stuff.textured.iter_mut().enumerate() {
             rs.render_textured(t.model.clone(), t.trf, t_i);
         }
@@ -141,14 +145,22 @@ fn main() -> Result<()> {
 
     let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
 
-    let camera = camera::Camera::look_at(
-        Vec3::new(0., -2., -10.),
-        Vec3::zero(),
-        Vec3::unit_y(),
-    );
+    let camera = camera::Camera::look_at(Vec3::new(0., -2., -10.), Vec3::zero(), Vec3::unit_y());
     engine.set_camera(camera);
-    let mut stuff = GameStuff {rooms: vec![], objects: HashMap::from([]), textured: vec![]};
-    let tex = engine.load_texture(std::path::Path::new("content/robot.png"))?;
+    let mut stuff = GameStuff {
+        rooms: vec![],
+        objects: HashMap::from([]),
+        textured: vec![],
+        flats: vec![],
+    };
+
+    // let flat_model = engine.load_flat(std::path::Path::new("content/livingroom.fbx"))?;
+    // stuff.flats.push(Flat {
+    //     trf: Similarity3::new(Vec3::new(0.0, 0.0, -10.0), Rotor3::identity(), 1.0),
+    //     model: flat_model,
+    // });
+
+    let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;
     let meshes = engine.load_textured(
         std::path::Path::new("content/characterSmall.fbx")
     )?;
@@ -188,7 +200,6 @@ fn main() -> Result<()> {
     ));
 
     /* BELOW SNIPPET CREATES THE ROBOT DUDE USING THE SCENE3D RENDERER
-    
         let tex = engine.load_texture(std::path::Path::new("content/robot.png"))?;
         let mesh = engine.load_mesh(std::path::Path::new("content/characterSmall.fbx"), 0.1)?;
         let model = engine.create_model(&mesh, &tex);
@@ -202,7 +213,6 @@ fn main() -> Result<()> {
 
     */
 
-    
     engine.play(move |_engine| {
         let player = game_state.player;
         player.move_with_input(&_engine);

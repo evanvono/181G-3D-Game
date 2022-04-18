@@ -211,12 +211,6 @@ impl Engine {
                     ..
                 } => {
                     self.input.handle_key_event(in_event);
-                    if self.input.is_key_pressed(VirtualKeyCode::Key0) {
-                        w.pause();
-                    }
-                    else if self.input.is_key_pressed(VirtualKeyCode::Key1) {
-                        w.unpause();
-                    }
                 }
                 Event::WindowEvent {
                     event: WindowEvent::MouseInput {
@@ -232,9 +226,9 @@ impl Engine {
                     event: winit::event::DeviceEvent::MouseMotion { delta }
                     , ..
                 } => {
-                    if !w.paused(){
-                        self.input.handle_cursor_motion(delta)
-                    }
+                    
+                    self.input.handle_cursor_motion(delta)
+                    
                     
                 }
                 Event::WindowEvent {
@@ -244,9 +238,9 @@ impl Engine {
                     }, 
                     ..
                 } => {
-                    if !w.paused(){
-                        self.input.handle_cursor_moved_event(position)
-                    }
+                    
+                    self.input.handle_cursor_moved_event(position)
+                    
                 }
                 Event::MainEventsCleared => {
                     // track DT, accumulator, ...

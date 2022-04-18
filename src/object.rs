@@ -10,6 +10,8 @@ use crate::input;
 use winit::event::VirtualKeyCode;
 
 const PLAYER_HEIGHT: f32 = 2.;
+const PAUSE: VirtualKeyCode = VirtualKeyCode::Key1;
+const UNPAUSE: VirtualKeyCode = VirtualKeyCode::Key0;
 
 #[derive(Copy, Clone)]
 pub enum ObjType {
@@ -148,13 +150,14 @@ pub struct Player{
     pub volume: RPrism,
     pub film_capacity: usize,
     pub perspective_deg: (f32, f32),
-    pub move_spd: f32
+    pub move_spd: f32,
+    pub pause_rot: bool
 }
 impl Player{
     pub fn new(id: usize, container: Option<usize>, volume: RPrism, perspective_deg: (f32, f32), move_spd: f32) -> Player{
         Player{
             id, otype: ObjType::Room, container, volume,
-            film_capacity: 10, perspective_deg, move_spd
+            film_capacity: 10, perspective_deg, move_spd, pause_rot: false
         }
     }
     pub fn get_camera(&self) -> camera::Camera {
@@ -169,11 +172,26 @@ impl Player{
         self.perspective_deg = deg
     }
 
+    pub fn pause_rotation(&mut self){
+        self.pause_rot = true;
+    }
+
+    pub fn unpause_rotation(&mut self){
+        self.pause_rot = false;
+    }
+
     pub fn move_with_input(&mut self, input: &input::Input) {
         let delta = input.get_mouse_delta();
     
         let mut is_moving = false;
         let mut directions: Vec<Direction> = Vec::new();
+
+        if input.is_key_pressed(PAUSE){
+            self.pause_rotation();
+        }
+        else if input.is_key_pressed(UNPAUSE){
+            self.unpause_rotation();
+        }
     
         if input.is_key_down(VirtualKeyCode::Up) || input.is_key_down(VirtualKeyCode::W) {
             directions.push(Direction::Forward);
@@ -194,9 +212,11 @@ impl Player{
     
         let (mut cam_degrees_x, mut cam_degrees_y) = self.get_deg();
     
-        cam_degrees_x -= delta.x as f32 / input::Input::get_mouse_move_scale();
-        cam_degrees_y += delta.y as f32 / input::Input::get_mouse_move_scale();
-    
+        if !self.pause_rot {
+            cam_degrees_x -= delta.x as f32 / input::Input::get_mouse_move_scale();
+            cam_degrees_y += delta.y as f32 / input::Input::get_mouse_move_scale();
+        }
+        
         if cam_degrees_y > 89.0 {
             cam_degrees_y = 89.0
         }

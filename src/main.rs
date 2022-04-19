@@ -26,6 +26,7 @@ const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
+const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::A;
 
 #[derive(Debug)]
 struct GenericGameThing {}
@@ -95,6 +96,7 @@ pub struct GameState {
     film_used: usize,
     clues_found: Vec<usize>,
     goal_clues: usize,
+    check_clues: bool
 }
 
 impl GameState {
@@ -111,7 +113,8 @@ impl GameState {
             ), //this is temp CHANGE
             film_used: 0,
             clues_found: Vec::new(),
-            goal_clues
+            goal_clues,
+            check_clues: false,
         }
     }
 }
@@ -120,6 +123,11 @@ impl engine::World for GameState {
     fn update(&mut self, input: &input::Input, _assets: &mut assets::Assets) {
         let player = &mut self.player;
         player.move_with_input(input);
+
+        if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity{
+            self.check_clues = true;
+            self.film_used += 1;
+        }
     }
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) {
         let camera = self.player.get_camera();
@@ -136,6 +144,12 @@ impl engine::World for GameState {
         }
         for (t_i, t) in self.stuff.textured.iter_mut().enumerate() {
             rs.render_textured(t.model.clone(), t.trf, t_i);
+        }
+
+        //this is where the query stuff might need to go??
+        if self.check_clues{
+            //do stuff
+            self.check_clues = false;
         }
     }
 

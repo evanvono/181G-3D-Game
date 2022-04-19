@@ -7,7 +7,7 @@ use crate::vulkan::Vulkan;
 use winit::event::MouseButton;
 use color_eyre::eyre::Result;
 use std::rc::Rc;
-use winit::event::{Event, WindowEvent};
+use winit::event::{Event, WindowEvent, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use crate::input;
@@ -19,6 +19,9 @@ pub trait GameThing:'static {}
 pub trait World {
     fn update(&mut self, inp: &input::Input, assets: &mut assets::Assets);
     fn render(&mut self, assets: &mut assets::Assets, render_state: &mut renderer::RenderState);
+    fn paused(&self) -> bool;
+    fn pause(&mut self);
+    fn unpause(&mut self);
 }
 
 pub struct WindowSettings {
@@ -223,7 +226,10 @@ impl Engine {
                     event: winit::event::DeviceEvent::MouseMotion { delta }
                     , ..
                 } => {
+                    
                     self.input.handle_cursor_motion(delta)
+                    
+                    
                 }
                 Event::WindowEvent {
                     event: WindowEvent::CursorMoved {
@@ -232,7 +238,9 @@ impl Engine {
                     }, 
                     ..
                 } => {
+                    
                     self.input.handle_cursor_moved_event(position)
+                    
                 }
                 Event::MainEventsCleared => {
                     // track DT, accumulator, ...

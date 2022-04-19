@@ -95,7 +95,6 @@ pub struct GameState {
     film_used: usize,
     clues_found: Vec<usize>,
     goal_clues: usize,
-    rotation_pause: bool,
 }
 
 impl GameState {
@@ -112,8 +111,7 @@ impl GameState {
             ), //this is temp CHANGE
             film_used: 0,
             clues_found: Vec::new(),
-            goal_clues,
-            rotation_pause: false,
+            goal_clues
         }
     }
 }
@@ -139,18 +137,6 @@ impl engine::World for GameState {
         for (t_i, t) in self.stuff.textured.iter_mut().enumerate() {
             rs.render_textured(t.model.clone(), t.trf, t_i);
         }
-    }
-
-    fn paused(&self) -> bool {
-        self.rotation_pause
-    }
-
-    fn pause(&mut self) {
-        self.rotation_pause = true;
-    }
-
-    fn unpause(&mut self) {
-        self.rotation_pause = false;
     }
 
 }

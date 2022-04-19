@@ -19,9 +19,6 @@ pub trait GameThing:'static {}
 pub trait World {
     fn update(&mut self, inp: &input::Input, assets: &mut assets::Assets);
     fn render(&mut self, assets: &mut assets::Assets, render_state: &mut renderer::RenderState);
-    fn paused(&self) -> bool;
-    fn pause(&mut self);
-    fn unpause(&mut self);
 }
 
 pub struct WindowSettings {

@@ -12,6 +12,9 @@ use winit::event::VirtualKeyCode;
 const PLAYER_HEIGHT: f32 = 2.;
 const PAUSE: VirtualKeyCode = VirtualKeyCode::Key1;
 const UNPAUSE: VirtualKeyCode = VirtualKeyCode::Key0;
+const RESET_PLAYER: VirtualKeyCode = VirtualKeyCode::Q;
+const RESET_POS: VirtualKeyCode = VirtualKeyCode::W;
+const RESET_DEG: VirtualKeyCode = VirtualKeyCode::E;
 
 #[derive(Copy, Clone)]
 pub enum ObjType {
@@ -151,13 +154,16 @@ pub struct Player{
     pub film_capacity: usize,
     pub perspective_deg: (f32, f32),
     pub move_spd: f32,
-    pub pause_rot: bool
+    pub pause_rot: bool,
+    default_pos: Vec3,
+    default_deg: (f32, f32)
 }
 impl Player{
     pub fn new(id: usize, container: Option<usize>, volume: RPrism, perspective_deg: (f32, f32), move_spd: f32) -> Player{
         Player{
             id, otype: ObjType::Room, container, volume,
-            film_capacity: 10, perspective_deg, move_spd, pause_rot: false
+            film_capacity: 10, perspective_deg, move_spd, 
+            pause_rot: false, default_pos: volume.pos, default_deg: perspective_deg
         }
     }
     pub fn get_camera(&self) -> camera::Camera {
@@ -165,6 +171,13 @@ impl Player{
         let at = Vec3::new(player_at.x, PLAYER_HEIGHT, player_at.z);
         camera::Camera::look_at_degrees(at, Vec3::unit_y(), self.get_deg())
     }
+
+    pub fn get_default_camera(&self) -> camera::Camera {
+        let player_at = self.default_pos;
+        let at = Vec3::new(player_at.x, PLAYER_HEIGHT, player_at.z);
+        camera::Camera::look_at_degrees(at, Vec3::unit_y(), self.default_deg)
+    }
+   
     pub fn get_deg(&self) -> (f32,f32) {
         self.perspective_deg
     }
@@ -240,8 +253,22 @@ impl Player{
         pos.z += (distance * theta.to_radians().cos()) as f32;
         pos.x += (distance * theta.to_radians().sin()) as f32;
         
-        self.set_pos(pos);
-        self.set_deg((cam_degrees_x, cam_degrees_y));
+        if input.is_key_pressed(RESET_PLAYER){
+            self.set_pos(self.default_pos);
+            self.set_deg(self.default_deg);
+        }
+        else if input.is_key_pressed(RESET_POS){
+            self.set_pos(self.default_pos);
+            self.set_deg((cam_degrees_x, cam_degrees_y));
+        }
+        else if input.is_key_pressed(RESET_DEG){
+            self.set_pos(pos);
+            self.set_deg(self.default_deg);
+        }
+        else {
+            self.set_pos(pos);
+            self.set_deg((cam_degrees_x, cam_degrees_y));
+        }
     }
 }
 impl Object for Player{

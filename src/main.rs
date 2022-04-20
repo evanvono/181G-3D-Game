@@ -7,6 +7,7 @@ use color_eyre::eyre::Result;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
+use crate::camera::Camera;
 
 mod animation;
 mod assets;
@@ -26,6 +27,7 @@ const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
+
 
 #[derive(Debug)]
 struct GenericGameThing {}

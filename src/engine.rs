@@ -1,20 +1,23 @@
-use crate::input::Input;
-use crate::Isometry3;
 use crate::animation;
 use crate::assets::{self, Assets};
+use crate::camera::Camera;
+use crate::input;
+use crate::input::Input;
 use crate::renderer;
+use crate::renderer::flat::NUM_CLUES;
 use crate::vulkan::Vulkan;
-use winit::event::MouseButton;
+use crate::Isometry3;
 use color_eyre::eyre::Result;
 use std::rc::Rc;
-use winit::event::{Event, WindowEvent, VirtualKeyCode};
+use vulkano::query::{
+    QueryControlFlags, QueryPool, QueryPoolCreateInfo, QueryResultFlags, QueryType,
+};
+use winit::event::MouseButton;
+use winit::event::{Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use crate::input;
-use crate::camera::Camera;
 
-
-pub trait GameThing:'static {}
+pub trait GameThing: 'static {}
 
 pub trait World {
     fn update(&mut self, inp: &input::Input, assets: &mut assets::Assets);
@@ -36,12 +39,12 @@ impl Default for WindowSettings {
         }
     }
 }
-use thunderdome::{Arena,Index};
+use thunderdome::{Arena, Index};
 pub struct GameObjectRef(Index);
 pub struct TransformParent {
-    parent:GameObjectRef,
-    local_to_global:Isometry3,
-    global_to_local:Isometry3
+    parent: GameObjectRef,
+    local_to_global: Isometry3,
+    global_to_local: Isometry3,
 }
 
 pub struct Engine {
@@ -91,13 +94,13 @@ impl Engine {
             last_frame: std::time::Instant::now(),
         }
     }
-    pub fn set_camera(&mut self, cam:Camera) {
+    pub fn set_camera(&mut self, cam: Camera) {
         self.render_states = [
             crate::renderer::RenderState::new(cam),
             crate::renderer::RenderState::new(cam),
         ]
     }
-    pub fn play(mut self, f:impl Fn(&mut Self) + 'static) -> Result<()> {
+    pub fn play(mut self, f: impl Fn(&mut Self) + 'static) -> Result<()> {
         let ev = self.event_loop.take().unwrap();
         ev.run(move |event, _, control_flow| {
             match event {
@@ -127,30 +130,22 @@ impl Engine {
                     self.input.handle_key_event(in_event);
                 }
                 Event::WindowEvent {
-                    event: WindowEvent::MouseInput {
-                        state: button_state,
-                        button: MouseButton::Left,
-                        ..
-                    }, 
+                    event:
+                        WindowEvent::MouseInput {
+                            state: button_state,
+                            button: MouseButton::Left,
+                            ..
+                        },
                     ..
-                } => {
-                    self.input.handle_left_mouse_event(button_state)
-                }
+                } => self.input.handle_left_mouse_event(button_state),
                 Event::DeviceEvent {
-                    event: winit::event::DeviceEvent::MouseMotion { delta }
-                    , ..
-                } => {
-                    self.input.handle_cursor_motion(delta)
-                }
-                Event::WindowEvent {
-                    event: WindowEvent::CursorMoved {
-                        position,
-                        ..
-                    }, 
+                    event: winit::event::DeviceEvent::MouseMotion { delta },
                     ..
-                } => {
-                    self.input.handle_cursor_moved_event(position)
-                }
+                } => self.input.handle_cursor_motion(delta),
+                Event::WindowEvent {
+                    event: WindowEvent::CursorMoved { position, .. },
+                    ..
+                } => self.input.handle_cursor_moved_event(position),
                 Event::MainEventsCleared => {
                     // track DT, accumulator, ...
                     {
@@ -194,35 +189,22 @@ impl Engine {
                     self.input.handle_key_event(in_event);
                 }
                 Event::WindowEvent {
-                    event: WindowEvent::MouseInput {
-                        state: button_state,
-                        button: MouseButton::Left,
-                        ..
-                    }, 
+                    event:
+                        WindowEvent::MouseInput {
+                            state: button_state,
+                            button: MouseButton::Left,
+                            ..
+                        },
                     ..
-                } => {
-                    self.input.handle_left_mouse_event(button_state)
-                }
+                } => self.input.handle_left_mouse_event(button_state),
                 Event::DeviceEvent {
-                    event: winit::event::DeviceEvent::MouseMotion { delta }
-                    , ..
-                } => {
-                    
-                    self.input.handle_cursor_motion(delta)
-                    
-                    
-                }
-                Event::WindowEvent {
-                    event: WindowEvent::CursorMoved {
-                        position,
-                        ..
-                    }, 
+                    event: winit::event::DeviceEvent::MouseMotion { delta },
                     ..
-                } => {
-                    
-                    self.input.handle_cursor_moved_event(position)
-                    
-                }
+                } => self.input.handle_cursor_motion(delta),
+                Event::WindowEvent {
+                    event: WindowEvent::CursorMoved { position, .. },
+                    ..
+                } => self.input.handle_cursor_moved_event(position),
                 Event::MainEventsCleared => {
                     // track DT, accumulator, ...
                     {
@@ -293,23 +275,25 @@ impl Engine {
             &self.assets,
             &self.interpolated_state.camera,
         );
+        unsafe {
+            builder
+                .reset_query_pool(self.flat_renderer.query_pool.clone(), 0..NUM_CLUES as u32)
+                .unwrap()
+                .begin_render_pass(
+                    vulkan.framebuffers[image_num].clone(),
+                    SubpassContents::Inline,
+                    vec![[0.0, 0.0, 0.0, 0.0].into(), (0.0).into()],
+                )
+                .unwrap()
+                .set_viewport(0, [vulkan.viewport.clone()]);
 
-        builder
-            .begin_render_pass(
-                vulkan.framebuffers[image_num].clone(),
-                SubpassContents::Inline,
-                vec![[0.0, 0.0, 0.0, 0.0].into(), (0.0).into()],
-            )
-            .unwrap()
-            .set_viewport(0, [vulkan.viewport.clone()]);
+            self.skinned_renderer.draw(&mut builder);
+            self.sprites_renderer.draw(&mut builder);
+            self.flat_renderer.draw(&mut builder);
+            self.textured_renderer.draw(&mut builder);
 
-        self.skinned_renderer.draw(&mut builder);
-        self.sprites_renderer.draw(&mut builder);
-        self.flat_renderer.draw(&mut builder);
-        self.textured_renderer.draw(&mut builder);
-
-        builder.end_render_pass().unwrap();
-
+            builder.end_render_pass().unwrap();
+        }
         let command_buffer = builder.build().unwrap();
         vulkan.execute_commands(command_buffer, image_num);
     }
@@ -359,5 +343,37 @@ impl Engine {
     }
     pub fn get_inputs(&self) -> Input {
         self.input.clone()
+    }
+    fn get_query_pool_results(&self) -> [u32; NUM_CLUES] {
+        let mut query_results = [0u32; NUM_CLUES];
+
+        self.flat_renderer
+            .query_pool
+            .queries_range(0..3)
+            .unwrap()
+            .get_results(
+                &mut query_results,
+                QueryResultFlags {
+                    // Block the function call until the results are available.
+                    // Note: if not all the queries have actually been executed, then this
+                    // will wait forever for something that never happens!
+                    wait: true,
+
+                    // Blocking and waiting will never give partial results.
+                    partial: false,
+
+                    // Blocking and waiting will ensure the results are always available after
+                    // the function returns.
+                    //
+                    // If you disable waiting, then this can be used to include the
+                    // availability of each query's results. You need one extra element per
+                    // query in your `query_results` buffer for this. This element will
+                    // be filled with a zero/nonzero value indicating availability.
+                    with_availability: false,
+                },
+            )
+            .unwrap();
+
+        query_results
     }
 }

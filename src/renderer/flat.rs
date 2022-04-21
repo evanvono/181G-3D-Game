@@ -202,7 +202,7 @@ void main() {
     }
     pub(crate) fn push_model(
         &mut self,
-        key: ModelKey,
+        key: ModelKey, // could also make this a mesh, texture, and Option<key> sayihg which query it is => get whole bactch where all in  batch is same key
         mesh: &Mesh,
         material: &Material,
         trf: Similarity3,
@@ -213,7 +213,7 @@ void main() {
         };
         match self.batches.entry(key) {
             Entry::Vacant(v) => {
-                let mut b = Self::create_batch(self.pipeline.clone(), mesh, material);
+                let mut b = Self::create_batch(self.pipeline.clone(), mesh, material); // make it part of this data what query pool it is Option<usize>. PArt of the batch. Everything part of that query is part of query pool
                 b.push_instance(inst);
                 v.insert(b);
             }
@@ -241,13 +241,13 @@ void main() {
         }
     }
     pub fn prepare(&mut self, rs: &super::RenderState, assets: &assets::Assets, camera: &Camera) {
-        for v in rs.flats.values() {
+        for v in rs.flats.values() /* change to iter  and matchh k,v*/ { // match k,v to get render keys as well => e.g. keys 1000...1005 are evidence 
             for (meshr, matr) in v.model.meshes.iter().zip(v.model.materials.iter()) {
                 let mesh = assets.flat_mesh(*meshr);
                 let mat = assets.material(*matr);
-                self.push_model(ModelKey(*meshr, *matr), mesh, mat, v.transform);
-            }
-        }
+                self.push_model(ModelKey(*meshr, *matr /* key ID */), mesh, mat, v.transform); // pass key through this as well to have access in draw
+            } 
+        } // anytying drawn during query 
         self.prepare_draw(camera);
     }
     fn prepare_draw(&mut self, camera: &Camera) {
@@ -267,8 +267,9 @@ void main() {
         let uds = self.uniform_binding.clone().unwrap();
 
         builder.bind_pipeline_graphics(self.pipeline.clone());
-
+        //   vv the model key so it has the optioanl ID
         for (_b, dat) in self.batches.iter() {
+            // matchh if there's some key then draw with query, otherwise draw without
             dat.draw(self.pipeline.clone(), uds.clone(), builder);
         }
         self.clear_frame();
@@ -324,6 +325,10 @@ impl BatchData {
             )
             .unwrap();
     }
+
+    // fn draw_with_query - pass in query pool, initialize query pool, .... 
+    // add some public function to pass the data back to let us know the query results
+    // might just make sense to draw evey evidence (draw in same order) each time, that way we get same number of queries
     fn clear_frame(&mut self) {
         self.instance_data.clear();
     }

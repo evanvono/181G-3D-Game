@@ -1,3 +1,4 @@
+use crate::{Sprite, Flat, Textured};
 use super::types::*;
 
 pub use std::f32::consts::PI;
@@ -21,6 +22,15 @@ pub enum ObjType {
     Player,
 }
 
+#[derive(Copy, Clone)]
+pub enum RenderType {
+    Sprite(usize),
+    Flat(usize),
+    Textured(usize)
+}
+
+
+
 pub trait Object {
     
     fn get_id(&self) -> usize;
@@ -29,6 +39,7 @@ pub trait Object {
     fn get_volume(&self)-> RPrism;
     fn get_pos(&self) -> Vec3;
     fn set_pos(&mut self,pos:Vec3);
+    fn get_renderable(&self) -> Option<RenderType>;
 }
 
 pub struct Room{
@@ -37,11 +48,12 @@ pub struct Room{
     pub container: Option<usize>,
     pub volume: RPrism,
     pub is_occupied: bool,
+    pub neighbors: Vec<usize>
 }
 impl Room{
 fn new(id: usize, container: Option<usize>, volume: RPrism) -> Room{
         Room{
-            id, otype: ObjType::Room, container, volume, is_occupied: false
+            id, otype: ObjType::Room, container, volume, is_occupied: false, neighbors: vec![]
         }
     }
 }
@@ -67,6 +79,10 @@ impl Object for Room{
     fn set_pos(&mut self, pos: Vec3) {
         self.volume.pos = pos;
     }
+
+    fn get_renderable(&self) -> Option<RenderType> {
+        None
+    }
 }
 
 pub struct Clue{
@@ -75,11 +91,12 @@ pub struct Clue{
     pub container: Option<usize>,
     pub volume: RPrism,
     pub found: bool,
+    pub renderable: RenderType
 }
 impl Clue{
-     fn new(id: usize, container: Option<usize>, volume: RPrism) -> Clue{
+    pub fn new(id: usize, container: Option<usize>, volume: RPrism, renderable: RenderType) -> Clue{
         Clue{
-            id, otype: ObjType::Clue, container, volume, found: false
+            id, otype: ObjType::Clue, container, volume, found: false, renderable
         }
     }
 }
@@ -105,6 +122,9 @@ impl Object for Clue{
     fn set_pos(&mut self, pos: Vec3) {
         self.volume.pos = pos
     }
+    fn get_renderable(&self) -> Option<RenderType> {
+        Some(self.renderable)
+    }
 }
 
 pub struct NotClue{
@@ -112,11 +132,12 @@ pub struct NotClue{
     pub otype: ObjType,
     pub container: Option<usize>,
     pub volume: RPrism,
+    pub renderable: RenderType
 }
 impl NotClue{
-    fn new(id: usize, container: Option<usize>, volume: RPrism) -> NotClue{
+    pub fn new(id: usize, container: Option<usize>, volume: RPrism, renderable: RenderType) -> NotClue{
         NotClue{
-            id, otype: ObjType::NotClue, container, volume
+            id, otype: ObjType::NotClue, container, volume, renderable
         }
     }
 }
@@ -141,6 +162,9 @@ impl Object for NotClue{
     }
     fn set_pos(&mut self, pos: Vec3) {
         self.volume.pos = pos
+    }
+    fn get_renderable(&self) -> Option<RenderType> {
+        Some(self.renderable)
     }
 }
 pub struct Player{
@@ -266,6 +290,10 @@ impl Object for Player{
     }
     fn set_pos(&mut self, pos: Vec3) {
         self.volume.pos = pos;
+    }
+
+    fn get_renderable(&self) -> Option<RenderType> {
+        None
     }
 }
 

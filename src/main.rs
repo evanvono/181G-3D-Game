@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use winit::event::VirtualKeyCode;
 use crate::engine::Engine;
 use crate::engine::WindowSettings;
 pub use color_eyre;
@@ -43,17 +44,17 @@ impl GameObject {
         self.state.tick(DT);
     }
 }
-struct Sprite {
+pub struct Sprite {
     trf: Isometry3,
     tex: assets::TextureRef,
     cel: Rect,
     size: Vec2,
 }
-struct Flat {
+pub struct Flat {
     trf: Similarity3,
     model: Rc<renderer::flat::Model>,
 }
-struct Textured {
+pub struct Textured {
     trf: Similarity3,
     model: Rc<renderer::textured::Model>,
 }
@@ -64,16 +65,17 @@ pub struct GameStuff {
     //osborn has work arounds??? ^^^
     textured: Vec<Textured>,
     flats: Vec<Flat>,
+    sprites: Vec<Sprite>
 }
 impl GameStuff {
-    // fn new(rooms: Vec<object::Room>, objects: HashMap<usize, Box<dyn object::Object>>) -> GameStuff {
-    //     GameStuff { rooms, objects }
-    // }
+    fn new(rooms: Vec<object::Room>, objects: HashMap<usize, Box<dyn object::Object>>, textured: Vec<Textured>, flats: Vec<Flat>, sprites: Vec<Sprite>) -> GameStuff {
+        GameStuff { rooms, objects, textured, flats, sprites }
+    }
 
     // fn found_clue(&mut self, obj_key: usize) -> () {
     //     if let Some(some_obj) = self.objects.get_mut(&obj_key) {
     //         if let object::ObjType::Clue = some_obj.otype {
-    //             some_obj.found = true;
+    //             *some_obj.into_raw().found = true;
     //         }
     //     }
     // }
@@ -133,20 +135,26 @@ impl engine::World for GameState {
         let camera = self.player.get_camera();
         rs.set_camera(camera);
 
-        // for (obj_i, obj) in self.things.iter_mut().enumerate() {
-        //     rs.render_skinned(obj.model.clone(), obj.animation, obj.state, obj.trf, obj_i);
-        // }
-        // for (s_i, s) in self.sprites.iter_mut().enumerate() {
-        //     rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
-        // }
-        for (m_i, m) in self.stuff.flats.iter_mut().enumerate() {
-            rs.render_flat(m.model.clone(), m.trf, m_i);
-        }
-        for (t_i, t) in self.stuff.textured.iter_mut().enumerate() {
-            rs.render_textured(t.model.clone(), t.trf, t_i);
-        }
+        for (_, object) in self.stuff.objects.iter() {
+            match object.get_renderable() {
+                Some(RenderType::Flat(id)) => {
+                    let m = self.stuff.flats.get(id).unwrap();
+                    rs.render_flat(m.model.clone(), m.trf, id); // id is the key
+                }
+                Some(RenderType::Textured(id)) => {
+                    let t = self.stuff.textured.get(id).unwrap();
+                    rs.render_textured(t.model.clone(), t.trf, id);
+                }
+                Some(RenderType::Sprite(id)) => {
+                    let s = self.stuff.sprites.get(id).unwrap();
+                    rs.render_sprite(s.tex, s.cel, s.trf, s.size, id);
 
-        //this is where the query stuff might need to go??
+                }
+                None => ()
+            }
+        }
+// put inside a graphics/render pipeline that asks for it
+        //this is where query stuff might need to go??
         if self.check_clues{
             //do stuff
             self.check_clues = false;
@@ -162,13 +170,13 @@ fn main() -> Result<()> {
 
     let camera = camera::Camera::look_at(Vec3::new(0., -2., -10.), Vec3::zero(), Vec3::unit_y());
     engine.set_camera(camera);
-    let mut stuff = GameStuff {
-        rooms: vec![],
-        objects: HashMap::from([]),
-        textured: vec![],
-        flats: vec![],
-    };
-
+    let mut stuff = GameStuff::new(
+        vec![],
+        HashMap::from([]),
+        vec![],
+        vec![],
+        vec![]
+    );
 
 
     let flat_model = engine.load_flat(std::path::Path::new("content/livingroom.glb"))?;
@@ -176,6 +184,29 @@ fn main() -> Result<()> {
         trf: Similarity3::new(Vec3::new(0.0, 0.0, 10.0), Rotor3::from_rotation_yz(90.0f32.to_radians()), 1.0),
         model: flat_model,
     });
+    stuff.objects.insert(0, Box::new(NotClue::new(
+        0,
+        None,
+        RPrism{ pos: Vec3::new(0.,0.,10.), sz: Vec3::new(0.,0.,0.)},
+        RenderType::Flat(0)
+    )));
+    
+    
+    let marble_tex = engine.load_texture(std::path::Path::new("content/sphere-diffuse.jpg"))?;
+    let marble_meshes = engine.load_textured(std::path::Path::new("content/sphere.obj"))?;
+    let marble = engine.create_textured_model(marble_meshes, vec![marble_tex]);
+
+    stuff.textured.push(Textured {
+        trf: Similarity3::new(Vec3::new(-5.0, 5.0, 25.0), Rotor3::identity(), 5.0),
+        model: marble,
+    });
+
+    stuff.objects.insert(1, Box::new(Clue::new(
+        0,
+        None,
+        RPrism{ pos: Vec3::new(0.,0.,0.), sz: Vec3::new(0.,0.,0.)},
+        RenderType::Textured(0)
+    )));
 
     // let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;
     // let meshes = engine.load_textured(

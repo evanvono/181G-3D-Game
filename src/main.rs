@@ -12,6 +12,7 @@ use winit::event::VirtualKeyCode;
 
 mod animation;
 mod assets;
+mod anim_2d;
 mod camera;
 mod engine;
 mod image;
@@ -145,7 +146,6 @@ impl engine::World for GameState {
                             self.game_mode = GameMode::GamePlay;
                         }
         }
-
         
     }
 
@@ -154,7 +154,7 @@ impl engine::World for GameState {
         let camera; 
         match self.game_mode{
             GameMode::ClueDisplay => {
-                camera = camera::Camera::look_at_degrees(-Vec3::unit_x(), Vec3::unit_y(), (0.0, 0.0));
+                camera = camera::Camera::look_at(Vec3::unit_x(), Vec3::unit_y(), Vec3::unit_y());
 
                 self.game_mode = GameMode::GamePlay;
             }

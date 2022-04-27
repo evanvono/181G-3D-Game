@@ -66,7 +66,7 @@ impl Cutscene{
             }
         }
 
-    fn load_plates(text_sz: Vec2, plate_num: usize, plate_size: Vec2i) -> Vec<Image>{
+    fn load_plates(text_sz: Vec2, plate_num: usize, plate_size: Vec2) -> Vec<Image>{
         let mut temp = Vec::new();
         
 
@@ -85,7 +85,6 @@ impl Cutscene{
 
                 if plate_num > temp.len() {
                     temp.push(Rect{pos, sz: plate_size});
-                    temp.push(main.sub_image(pos, plate_size));
                 }
                 else{
                     break;

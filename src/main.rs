@@ -29,7 +29,7 @@ const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
-const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::A;
+const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::Space;
 const CLUE_FOUND_MIN_PIXELS: u32 = 1000;
 
 #[derive(Debug)]
@@ -167,22 +167,18 @@ impl engine::World for GameState {
                 None => (),
             }
         }
-
-        // put inside a graphics/render pipeline that asks for it
-        //this is where query stuff might need to go??
-        if self.check_clues {
-            //do stuff
-            self.check_clues = false;
-        }
     }
-
     fn handle_query_pool_results(&mut self, query_pool_results: &[u32; NUM_CLUES]) {
-        dbg!(query_pool_results);
-        query_pool_results.iter().enumerate().for_each(|(index, num_pixels)| {
-            if num_pixels >= CLUE_FOUND_MIN_PIXELS {
-                self.clues_found[index] = true;
-            }
-        })
+        if self.check_clues {
+            query_pool_results.iter().enumerate().for_each(|(index, num_pixels)| {
+                if *num_pixels >= CLUE_FOUND_MIN_PIXELS {
+                    self.clues_found[index] = true;
+                    println!{"(Found clue #{:?}) Fascinating! I wonder if this is part of the crime...", index};
+                }
+            });
+            println!{"Film remaining: {:?}", self.player.film_capacity - self.film_used };
+            self.check_clues = false
+        }
     }
 }
 

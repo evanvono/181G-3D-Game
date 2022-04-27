@@ -41,6 +41,7 @@ impl RenderState {
         self.textured.clear();
     }
     pub fn interpolate_from(&mut self, rs1: &Self, rs2: &Self, r: f32) {
+        self.clear();
         for (k, v1) in rs2.skinned.iter() {
             let v0 = rs1.skinned.get(k).unwrap_or(v1);
             self.skinned.insert(*k, v0.interpolate(v1, r));

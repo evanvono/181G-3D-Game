@@ -23,7 +23,8 @@ use vulkano::pipeline::Pipeline;
 use vulkano::render_pass::Subpass;
 use vulkano::query::{QueryControlFlags, QueryPool, QueryPoolCreateInfo, QueryResultFlags, QueryType};
 
-pub const NUM_CLUES: usize = 20;
+pub const NUM_CLUES: usize = 1;
+pub const OTHER_FLATS: usize = 1;
 
 #[derive(Clone, Debug)]
 pub struct Material {
@@ -256,7 +257,7 @@ void main() {
     }
     pub fn prepare(&mut self, rs: &super::RenderState, assets: &assets::Assets, camera: &Camera) {
         for (k,v) in rs.flats.iter() { // match k,v to get render keys as well => e.g. keys 1000...1005 are evidence 
-            let key = if k.0 < NUM_CLUES { Some(k.0) } else { None }; 
+            let key = if k.0 >= OTHER_FLATS && k.0 < (NUM_CLUES + OTHER_FLATS) { Some(k.0 - OTHER_FLATS) } else { None }; 
             for (meshr, matr) in v.model.meshes.iter().zip(v.model.materials.iter()) {
                 let mesh = assets.flat_mesh(*meshr);
                 let mat = assets.material(*matr);
@@ -287,8 +288,10 @@ void main() {
         for (_b, dat) in self.batches.iter() {
             // matchh if there's some key then draw with query, otherwise draw without
             if let Some(key) = _b.2 {
+                dbg!("drawing with query");
                 dat.draw_with_query(self.pipeline.clone(), uds.clone(), builder, &self.query_pool, key);
             } else {
+                // dbg!("drawing without query");
                 dat.draw(self.pipeline.clone(), uds.clone(), builder);
             }
         }
@@ -353,6 +356,8 @@ impl BatchData {
         query_pool: &Arc<QueryPool>,
         key: usize
     ) {
+
+        dbg!(key);
         unsafe {
             builder
                 .begin_query(query_pool.clone(), key as u32, QueryControlFlags { precise: false } )

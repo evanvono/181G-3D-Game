@@ -22,6 +22,7 @@ pub trait GameThing: 'static {}
 pub trait World {
     fn update(&mut self, inp: &input::Input, assets: &mut assets::Assets);
     fn render(&mut self, assets: &mut assets::Assets, render_state: &mut renderer::RenderState);
+    fn handle_query_pool_results(&mut self, query_pool_results: &[u32; NUM_CLUES]);
 }
 
 pub struct WindowSettings {
@@ -35,7 +36,7 @@ impl Default for WindowSettings {
         Self {
             w: 1024,
             h: 768,
-            title: "Engine Window".to_string(),
+            title: "Capture the Evidence".to_string(),
         }
     }
 }
@@ -62,6 +63,7 @@ pub struct Engine {
     dt: f64,
     acc: f64,
     last_frame: std::time::Instant,
+    query_results: [u32; NUM_CLUES]
 }
 
 impl Engine {
@@ -92,6 +94,7 @@ impl Engine {
             input,
             acc: 0.0,
             last_frame: std::time::Instant::now(),
+            query_results: [0u32; NUM_CLUES]
         }
     }
     pub fn set_camera(&mut self, cam: Camera) {
@@ -216,6 +219,8 @@ impl Engine {
                             if self.acc <= self.dt * 2.0 {
                                 self.render_states[0].clear();
                                 w.render(&mut self.assets, &mut self.render_states[0]);
+                                // let results = self.get_query_pool_results();
+                                w.handle_query_pool_results(&self.query_results);
                                 self.render_states.swap(0, 1);
                             }
                             self.acc -= self.dt;
@@ -275,6 +280,8 @@ impl Engine {
             &self.assets,
             &self.interpolated_state.camera,
         );
+
+        dbg!(0..NUM_CLUES);
         unsafe {
             builder
                 .reset_query_pool(self.flat_renderer.query_pool.clone(), 0..NUM_CLUES as u32)
@@ -289,12 +296,39 @@ impl Engine {
 
             self.skinned_renderer.draw(&mut builder);
             self.sprites_renderer.draw(&mut builder);
-            self.flat_renderer.draw(&mut builder);
             self.textured_renderer.draw(&mut builder);
+            self.flat_renderer.draw(&mut builder);
 
             builder.end_render_pass().unwrap();
         }
         let command_buffer = builder.build().unwrap();
+
+        self.flat_renderer.query_pool
+                .queries_range(0..NUM_CLUES as u32)
+                .unwrap()
+                .get_results(
+                    &mut self.query_results,
+                    QueryResultFlags {
+                        // Block the function call until the results are available.
+                        // Note: if not all the queries have actually been executed, then this
+                        // will wait forever for something that never happens!
+                        wait: false,
+
+                        // Blocking and waiting will never give partial results.
+                        partial: false,
+
+                        // Blocking and waiting will ensure the results are always available after
+                        // the function returns.
+                        //
+                        // If you disable waiting, then this can be used to include the
+                        // availability of each query's results. You need one extra element per
+                        // query in your `query_results` buffer for this. This element will
+                        // be filled with a zero/nonzero value indicating availability.
+                        with_availability: false,
+                    },
+                )
+                .unwrap();
+
         vulkan.execute_commands(command_buffer, image_num);
     }
     pub fn load_texture(&mut self, path: &std::path::Path) -> Result<assets::TextureRef> {
@@ -349,7 +383,7 @@ impl Engine {
 
         self.flat_renderer
             .query_pool
-            .queries_range(0..3)
+            .queries_range(0..NUM_CLUES as u32)
             .unwrap()
             .get_results(
                 &mut query_results,
@@ -373,7 +407,6 @@ impl Engine {
                 },
             )
             .unwrap();
-
         query_results
     }
 }

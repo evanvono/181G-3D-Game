@@ -1,13 +1,15 @@
 #![allow(dead_code)]
 
-use winit::event::VirtualKeyCode;
 use crate::engine::Engine;
 use crate::engine::WindowSettings;
+use crate::renderer::flat::NUM_CLUES;
 pub use color_eyre;
 use color_eyre::eyre::Result;
 use std::collections::HashMap;
+use std::env;
 use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
+use winit::event::VirtualKeyCode;
 
 mod animation;
 mod assets;
@@ -65,11 +67,23 @@ pub struct GameStuff {
     //osborn has work arounds??? ^^^
     textured: Vec<Textured>,
     flats: Vec<Flat>,
-    sprites: Vec<Sprite>
+    sprites: Vec<Sprite>,
 }
 impl GameStuff {
-    fn new(rooms: Vec<object::Room>, objects: HashMap<usize, Box<dyn object::Object>>, textured: Vec<Textured>, flats: Vec<Flat>, sprites: Vec<Sprite>) -> GameStuff {
-        GameStuff { rooms, objects, textured, flats, sprites }
+    fn new(
+        rooms: Vec<object::Room>,
+        objects: HashMap<usize, Box<dyn object::Object>>,
+        textured: Vec<Textured>,
+        flats: Vec<Flat>,
+        sprites: Vec<Sprite>,
+    ) -> GameStuff {
+        GameStuff {
+            rooms,
+            objects,
+            textured,
+            flats,
+            sprites,
+        }
     }
 
     // fn found_clue(&mut self, obj_key: usize) -> () {
@@ -98,7 +112,7 @@ pub struct GameState {
     film_used: usize,
     clues_found: Vec<usize>,
     goal_clues: usize,
-    check_clues: bool
+    check_clues: bool,
 }
 
 impl GameState {
@@ -126,7 +140,7 @@ impl engine::World for GameState {
         let player = &mut self.player;
         player.move_with_input(input);
 
-        if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity{
+        if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity {
             self.check_clues = true;
             self.film_used += 1;
         }
@@ -148,65 +162,74 @@ impl engine::World for GameState {
                 Some(RenderType::Sprite(id)) => {
                     let s = self.stuff.sprites.get(id).unwrap();
                     rs.render_sprite(s.tex, s.cel, s.trf, s.size, id);
-
                 }
-                None => ()
+                None => (),
             }
         }
-// put inside a graphics/render pipeline that asks for it
+
+        // put inside a graphics/render pipeline that asks for it
         //this is where query stuff might need to go??
-        if self.check_clues{
+        if self.check_clues {
             //do stuff
             self.check_clues = false;
         }
     }
 
+    fn handle_query_pool_results(&mut self, query_pool_results: &[u32; NUM_CLUES]) {
+        dbg!(query_pool_results);
+    }
 }
 
 fn main() -> Result<()> {
+    env::set_var("RUST_BACKTRACE", "1");
+    env::set_var("RUST_BACKTRACE", "FULL");
     color_eyre::install()?;
 
     let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
 
     let camera = camera::Camera::look_at(Vec3::new(0., -2., -10.), Vec3::zero(), Vec3::unit_y());
     engine.set_camera(camera);
-    let mut stuff = GameStuff::new(
-        vec![],
-        HashMap::from([]),
-        vec![],
-        vec![],
-        vec![]
-    );
-
+    let mut stuff = GameStuff::new(vec![], HashMap::from([]), vec![], vec![], vec![]);
 
     let flat_model = engine.load_flat(std::path::Path::new("content/livingroom.glb"))?;
     stuff.flats.push(Flat {
-        trf: Similarity3::new(Vec3::new(0.0, 0.0, 10.0), Rotor3::from_rotation_yz(90.0f32.to_radians()), 1.0),
+        trf: Similarity3::new(
+            Vec3::new(0.0, 0.0, 10.0),
+            Rotor3::from_rotation_yz(90.0f32.to_radians()),
+            1.0,
+        ),
         model: flat_model,
     });
-    stuff.objects.insert(0, Box::new(NotClue::new(
+    stuff.objects.insert(
         0,
-        None,
-        RPrism{ pos: Vec3::new(0.,0.,10.), sz: Vec3::new(0.,0.,0.)},
-        RenderType::Flat(0)
-    )));
-    
-    
-    let marble_tex = engine.load_texture(std::path::Path::new("content/sphere-diffuse.jpg"))?;
-    let marble_meshes = engine.load_textured(std::path::Path::new("content/sphere.obj"))?;
-    let marble = engine.create_textured_model(marble_meshes, vec![marble_tex]);
+        Box::new(NotClue::new(
+            0,
+            None,
+            RPrism {
+                pos: Vec3::new(0., 0., 10.),
+                sz: Vec3::new(0., 0., 0.),
+            },
+            RenderType::Flat(0),
+        )),
+    );
 
-    stuff.textured.push(Textured {
-        trf: Similarity3::new(Vec3::new(-5.0, 5.0, 25.0), Rotor3::identity(), 5.0),
-        model: marble,
+    let clue_model = engine.load_flat(std::path::Path::new("content/detail_crystal.glb"))?;
+    stuff.flats.push(Flat {
+        trf: Similarity3::new(Vec3::new(-5., 5., 20.), Rotor3::identity(), 1.0),
+        model: clue_model,
     });
-
-    stuff.objects.insert(1, Box::new(Clue::new(
-        0,
-        None,
-        RPrism{ pos: Vec3::new(0.,0.,0.), sz: Vec3::new(0.,0.,0.)},
-        RenderType::Textured(0)
-    )));
+    stuff.objects.insert(
+        1,
+        Box::new(Clue::new(
+            1,
+            None,
+            RPrism {
+                pos: Vec3::new(-5., 5., 20.),
+                sz: Vec3::new(0., 0., 0.),
+            },
+            RenderType::Flat(1),
+        )),
+    );
 
     // let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;
     // let meshes = engine.load_textured(

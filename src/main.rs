@@ -30,6 +30,7 @@ const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
 const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::A;
+const CLUE_FOUND_MIN_PIXELS: u32 = 1000;
 
 #[derive(Debug)]
 struct GenericGameThing {}
@@ -110,7 +111,7 @@ pub struct GameState {
     current_room: usize,
     player: object::Player,
     film_used: usize,
-    clues_found: Vec<usize>,
+    clues_found: [bool; NUM_CLUES],
     goal_clues: usize,
     check_clues: bool,
 }
@@ -128,7 +129,7 @@ impl GameState {
                 PLAYER_MOVE_SPD,
             ), //this is temp CHANGE
             film_used: 0,
-            clues_found: Vec::new(),
+            clues_found: [false; NUM_CLUES],
             goal_clues,
             check_clues: false,
         }
@@ -177,6 +178,11 @@ impl engine::World for GameState {
 
     fn handle_query_pool_results(&mut self, query_pool_results: &[u32; NUM_CLUES]) {
         dbg!(query_pool_results);
+        query_pool_results.iter().enumerate().for_each(|(index, num_pixels)| {
+            if num_pixels >= CLUE_FOUND_MIN_PIXELS {
+                self.clues_found[index] = true;
+            }
+        })
     }
 }
 

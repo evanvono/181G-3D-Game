@@ -281,7 +281,6 @@ impl Engine {
             &self.interpolated_state.camera,
         );
 
-        dbg!(0..NUM_CLUES);
         unsafe {
             builder
                 .reset_query_pool(self.flat_renderer.query_pool.clone(), 0..NUM_CLUES as u32)

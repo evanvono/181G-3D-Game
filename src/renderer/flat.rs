@@ -288,10 +288,8 @@ void main() {
         for (_b, dat) in self.batches.iter() {
             // matchh if there's some key then draw with query, otherwise draw without
             if let Some(key) = _b.2 {
-                dbg!("drawing with query");
                 dat.draw_with_query(self.pipeline.clone(), uds.clone(), builder, &self.query_pool, key);
             } else {
-                // dbg!("drawing without query");
                 dat.draw(self.pipeline.clone(), uds.clone(), builder);
             }
         }
@@ -357,7 +355,6 @@ impl BatchData {
         key: usize
     ) {
 
-        dbg!(key);
         unsafe {
             builder
                 .begin_query(query_pool.clone(), key as u32, QueryControlFlags { precise: false } )

@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
 use crate::camera::Camera;
+use winit::event::VirtualKeyCode;
 
 mod animation;
 mod assets;
@@ -27,7 +28,15 @@ const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
+const SNAP: VirtualKeyCode = VirtualKeyCode::S;
+const NEXT: VirtualKeyCode = VirtualKeyCode::Space;
 
+pub enum GameMode{
+    StartScene,
+    GamePlay,
+    ClueDisplay,
+    EndScene
+}
 
 #[derive(Debug)]
 struct GenericGameThing {}
@@ -65,6 +74,7 @@ pub struct GameStuff {
     //osborn has work arounds??? ^^^
     textured: Vec<Textured>,
     flats: Vec<Flat>,
+    textures: Vec<assets::TextureRef>,
 }
 impl GameStuff {
     // fn new(rooms: Vec<object::Room>, objects: HashMap<usize, Box<dyn object::Object>>) -> GameStuff {
@@ -97,6 +107,7 @@ pub struct GameState {
     film_used: usize,
     clues_found: Vec<usize>,
     goal_clues: usize,
+    game_mode: GameMode
 }
 
 impl GameState {
@@ -113,7 +124,8 @@ impl GameState {
             ), //this is temp CHANGE
             film_used: 0,
             clues_found: Vec::new(),
-            goal_clues
+            goal_clues,
+            game_mode: GameMode::GamePlay
         }
     }
 }
@@ -122,22 +134,56 @@ impl engine::World for GameState {
     fn update(&mut self, input: &input::Input, _assets: &mut assets::Assets) {
         let player = &mut self.player;
         player.move_with_input(input);
+
+        if input.is_key_pressed(SNAP){
+            self.game_mode = GameMode::ClueDisplay;
+            //do query stuff
+        }
+        
+        if let GameMode::ClueDisplay = self.game_mode{
+                if input.is_key_pressed(NEXT){
+                            self.game_mode = GameMode::GamePlay;
+                        }
+        }
+
+        
     }
+
+
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) {
-        let camera = self.player.get_camera();
+        let camera; 
+        match self.game_mode{
+            GameMode::ClueDisplay => {
+                camera = camera::Camera::look_at_degrees(-Vec3::unit_x(), Vec3::unit_y(), (0.0, 0.0));
+
+                self.game_mode = GameMode::GamePlay;
+            }
+            GameMode::GamePlay => {
+                camera = self.player.get_camera();
+            }
+            GameMode::StartScene => {
+                camera = self.player.get_camera();
+            }
+             GameMode::EndScene => {
+                camera = self.player.get_camera();
+            }
+        } 
         rs.set_camera(camera);
 
         // for (obj_i, obj) in self.things.iter_mut().enumerate() {
         //     rs.render_skinned(obj.model.clone(), obj.animation, obj.state, obj.trf, obj_i);
         // }
-        // for (s_i, s) in self.sprites.iter_mut().enumerate() {
-        //     rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
-        // }
+
+        
         for (m_i, m) in self.stuff.flats.iter_mut().enumerate() {
             rs.render_flat(m.model.clone(), m.trf, m_i);
         }
         for (t_i, t) in self.stuff.textured.iter_mut().enumerate() {
             rs.render_textured(t.model.clone(), t.trf, t_i);
+        }
+
+        for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
+            rs.render_sprite(*s, Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(480.0, 480.0)}, Isometry3::default(), Vec2::new(480.0, 480.0), s_i);
         }
     }
 
@@ -155,15 +201,19 @@ fn main() -> Result<()> {
         objects: HashMap::from([]),
         textured: vec![],
         flats: vec![],
+        textures: vec![],
     };
 
 
+    //load animation stuff 
 
     let flat_model = engine.load_flat(std::path::Path::new("content/livingroom.glb"))?;
     stuff.flats.push(Flat {
         trf: Similarity3::new(Vec3::new(0.0, 0.0, 10.0), Rotor3::from_rotation_yz(90.0f32.to_radians()), 1.0),
         model: flat_model,
     });
+    let texture = engine.load_texture(std::path::Path::new("content/title_scene.png"))?;
+    stuff.textures.push(texture);
 
     // let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;
     // let meshes = engine.load_textured(

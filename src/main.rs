@@ -13,7 +13,7 @@ use winit::event::VirtualKeyCode;
 
 mod animation;
 mod assets;
-//mod anim_2d;
+mod anim_2d;
 mod camera;
 mod engine;
 mod image;
@@ -181,7 +181,7 @@ impl engine::World for GameState {
          if let GameMode::ClueDisplay = self.game_mode{
             for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
 
-            let regoin =  Rect{pos: Vec2::new(480.0, 480.0), sz: Vec2::new(480.0, 480.0)};
+            let regoin =  Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(1240.0, 720.0)};
             let eye = Vec3::new(self.player.get_pos().x, 2.0, self.player.get_pos().z);
             let iso = Mat4::look_at(eye, self.player.get_pos(), Vec3::unit_y()).into_isometry();
             rs.render_sprite(*s,regoin,iso, Vec2::new(480.0, 480.0), s_i);

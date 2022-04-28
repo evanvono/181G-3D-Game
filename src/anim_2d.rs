@@ -7,7 +7,7 @@ use crate::assets;
 
 #[derive(Clone)]
 pub struct SceneData{
-    pub text_sz: Vec2
+    pub text_sz: Vec2,
     pub plate_num: usize,
     pub plate_size: Vec2,
     pub timing: Vec<usize>,
@@ -25,6 +25,31 @@ impl SceneData{
             }
         }
 
+}
+
+#[derive(Clone)]
+pub struct GraphicSet{
+    texture: assets::TextureRef,
+    plates: Vec<Rect>,
+}
+impl GraphicSet{
+    pub fn new(texture: assets::TextureRef, text_sz: Vec2, plate_num: usize, 
+        plate_size: Vec2) -> GraphicSet{
+            GraphicSet{
+                texture,
+                plates: Cutscene::load_plates(text_sz, plate_num, plate_size)
+            }
+        }
+
+    pub fn get_texture(&self) -> assets::TextureRef{
+        self.texture
+    }
+    pub fn get_plate(&self, plate_index: usize) -> Rect{
+        assert!(self.plates.len()>plate_index);
+        assert_ne!(plate_index, 0);
+        
+        self.plates[plate_index]
+    }
 }
 
 #[derive(Clone)]
@@ -66,22 +91,20 @@ impl Cutscene{
             }
         }
 
-    fn load_plates(text_sz: Vec2, plate_num: usize, plate_size: Vec2) -> Vec<Image>{
+    fn load_plates(text_sz: Vec2, plate_num: usize, plate_size: Vec2) -> Vec<Rect>{
         let mut temp = Vec::new();
-        
-
         let plates_across = text_sz.x / plate_size.x; 
         let plates_high = text_sz.y / plate_size.y; 
 
-        let mut pos = Vec2::new(0,0);
+        let mut pos = Vec2::new(0.0,0.0);
 
         //checks that the image can actually hold that number
         assert!((plates_across*plates_high) as usize >= plate_num);
 
-        for i in 0..plates_high{
-            for j in 0..plates_across{
-                pos.x = j * plate_size.x;
-                pos.y = i * plate_size.y;
+        for i in 0..plates_high as usize{
+            for j in 0..plates_across as usize{
+                pos.x = j as f32 * plate_size.x;
+                pos.y = i as f32 * plate_size.y;
 
                 if plate_num > temp.len() {
                     temp.push(Rect{pos, sz: plate_size});
@@ -140,19 +163,26 @@ impl Cutscene{
         if self.is_active{
             self.tick();
         }
-        
     }
 
     pub fn last_plate(&self) -> usize{
         self.plates.len()-1
     }
 
-    pub fn load_buffer(&mut self, fb2d:  &mut Image) -> ()
+    pub fn get_texture_ref(&self) -> assets::TextureRef{
+        self.texture
+    }
+
+    pub fn get_current_plate(&self) -> Rect{
+        self.plates[self.cur_plate]
+    }
+
+    /*pub fn load_buffer(&mut self, fb2d:  &mut Image) -> ()
     {
         self.incr_frame();
-        let rect = Rect{pos:Vec2i::new(0,0), sz: self.plates[self.cur_plate].sz};
-        fb2d.bitblt(&self.plates[self.cur_plate], rect, Vec2i::new(0,0));
-    }
+        let rect = Rect{pos:Vec2::new(0,0), sz: self.plates[self.cur_plate].sz};
+        fb2d.bitblt(&self.plates[self.cur_plate], rect, Vec2::new(0,0));
+    }*/
 
 }
 

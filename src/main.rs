@@ -9,10 +9,11 @@ use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
 use crate::camera::Camera;
 use winit::event::VirtualKeyCode;
+//use crate::frenderer::renderer::billboard::*;
 
 mod animation;
 mod assets;
-mod anim_2d;
+//mod anim_2d;
 mod camera;
 mod engine;
 mod image;
@@ -32,6 +33,7 @@ const PLAYER_MOVE_SPD: f32 = 0.25;
 const SNAP: VirtualKeyCode = VirtualKeyCode::S;
 const NEXT: VirtualKeyCode = VirtualKeyCode::Space;
 
+#[derive(Debug, Clone)]
 pub enum GameMode{
     StartScene,
     GamePlay,
@@ -154,9 +156,9 @@ impl engine::World for GameState {
         let camera; 
         match self.game_mode{
             GameMode::ClueDisplay => {
-                camera = camera::Camera::look_at(Vec3::unit_x(), Vec3::unit_y(), Vec3::unit_y());
-
-                self.game_mode = GameMode::GamePlay;
+                //camera = camera::Camera::look_at(Vec3::unit_x(), Vec3::unit_y(), Vec3::unit_y());
+                camera = self.player.get_camera();
+                //self.game_mode = GameMode::GamePlay;
             }
             GameMode::GamePlay => {
                 camera = self.player.get_camera();
@@ -174,17 +176,26 @@ impl engine::World for GameState {
         //     rs.render_skinned(obj.model.clone(), obj.animation, obj.state, obj.trf, obj_i);
         // }
 
-        
-        for (m_i, m) in self.stuff.flats.iter_mut().enumerate() {
+    
+           // dbg!(self.game_mode.clone());
+         if let GameMode::ClueDisplay = self.game_mode{
+            for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
+
+            let regoin =  Rect{pos: Vec2::new(480.0, 480.0), sz: Vec2::new(480.0, 480.0)};
+            let eye = Vec3::new(self.player.get_pos().x, 2.0, self.player.get_pos().z);
+            let iso = Mat4::look_at(eye, self.player.get_pos(), Vec3::unit_y()).into_isometry();
+            rs.render_sprite(*s,regoin,iso, Vec2::new(480.0, 480.0), s_i);
+        }
+         }
+         else {
+             for (m_i, m) in self.stuff.flats.iter_mut().enumerate() {
             rs.render_flat(m.model.clone(), m.trf, m_i);
         }
         for (t_i, t) in self.stuff.textured.iter_mut().enumerate() {
             rs.render_textured(t.model.clone(), t.trf, t_i);
         }
-
-        for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
-            rs.render_sprite(*s, Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(480.0, 480.0)}, Isometry3::default(), Vec2::new(480.0, 480.0), s_i);
-        }
+         }
+        
     }
 
 }
@@ -212,7 +223,7 @@ fn main() -> Result<()> {
         trf: Similarity3::new(Vec3::new(0.0, 0.0, 10.0), Rotor3::from_rotation_yz(90.0f32.to_radians()), 1.0),
         model: flat_model,
     });
-    let texture = engine.load_texture(std::path::Path::new("content/title_scene.png"))?;
+    let texture = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
     stuff.textures.push(texture);
 
     // let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;

@@ -9,7 +9,7 @@ use crate::camera;
 use crate::input;
 use winit::event::VirtualKeyCode;
 
-const PLAYER_HEIGHT: f32 = 2.;
+const PLAYER_HEIGHT: f32 = 2.0;
 const PAUSE: VirtualKeyCode = VirtualKeyCode::Key1;
 const UNPAUSE: VirtualKeyCode = VirtualKeyCode::Key0;
 const RESET_PLAYER: VirtualKeyCode = VirtualKeyCode::Q;

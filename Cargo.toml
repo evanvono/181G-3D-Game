@@ -17,3 +17,4 @@ russimp={version="1.0.2", features=["prebuilt"], git="https://github.com/JoeOsbo
 color-eyre = {version="0.5"}
 string-interner = "0.14.0"
 thunderdome="0.5.0"
+frenderer = "0.5.8"

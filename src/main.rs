@@ -11,7 +11,6 @@ use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
 use crate::camera::Camera;
 use winit::event::VirtualKeyCode;
-//use crate::frenderer::renderer::billboard::*;
 
 
 mod animation;
@@ -33,8 +32,13 @@ const DT: f64 = 1.0 / 60.0;
 const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
+const WIDTH: f32 = 1024.0;
+const CLUE_FOUND_MIN_PIXELS: u32 = 1000;
+const ORIGIN: Vec3 = Vec3::new(0.0,0.0,0.0);
+
+const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::Space;
 const SNAP: VirtualKeyCode = VirtualKeyCode::S;
-const NEXT: VirtualKeyCode = VirtualKeyCode::Space;
+const NEXT: VirtualKeyCode = VirtualKeyCode::N;
 
 #[derive(Debug, Clone)]
 pub enum GameMode{
@@ -43,10 +47,6 @@ pub enum GameMode{
     ClueDisplay,
     EndScene
 }
-
-const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::Space;
-const CLUE_FOUND_MIN_PIXELS: u32 = 1000;
-
 #[derive(Debug)]
 struct GenericGameThing {}
 impl engine::GameThing for GenericGameThing {}
@@ -156,17 +156,17 @@ impl engine::World for GameState {
     fn update(&mut self, input: &input::Input, _assets: &mut assets::Assets) {
         let player = &mut self.player;
         player.move_with_input(input);
-        if input.is_key_pressed(SNAP){
-            self.game_mode = GameMode::ClueDisplay;
-            //do query stuff
-        }
+        
         if let GameMode::ClueDisplay = self.game_mode{
                 if input.is_key_pressed(NEXT){
                             self.game_mode = GameMode::GamePlay;
+                            self.player.unpause_rotation();
                         }
         }
     
         if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity {
+            self.game_mode = GameMode::ClueDisplay;
+            self.player.pause_rotation();
             self.check_clues = true;
             self.film_used += 1;
         }
@@ -177,21 +177,16 @@ impl engine::World for GameState {
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) {
         let camera; 
         match self.game_mode{
-            GameMode::ClueDisplay => {
-                //camera = camera::Camera::look_at(Vec3::unit_x(), Vec3::unit_y(), Vec3::unit_y());
-                camera = self.player.get_camera();
-                //self.game_mode = GameMode::GamePlay;
-            }
             GameMode::GamePlay => {
                 camera = self.player.get_camera();
             }
-            GameMode::StartScene => {
-                camera = self.player.get_camera();
+            _ => {
+                //let iso = Mat4::look_at(eye, at, up).into_isometry();
+                camera = Camera::look_at(ORIGIN, Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Vec3::unit_y(), camera::Projection::Orthographic{width: WIDTH, depth: 10.0});
             }
-             GameMode::EndScene => {
-                camera = self.player.get_camera();
-            }
+            
         } 
+        dbg!(camera);
         rs.set_camera(camera);
 
         // for (obj_i, obj) in self.things.iter_mut().enumerate() {
@@ -203,9 +198,9 @@ impl engine::World for GameState {
          if let GameMode::ClueDisplay = self.game_mode{
             for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
                 let regoin =  Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(1240.0, 720.0)};
-                let eye = Vec3::new(self.player.get_pos().x, 2.0, self.player.get_pos().z);
-                let iso = Mat4::look_at(eye, self.player.get_pos(), Vec3::unit_y()).into_isometry();
-                rs.render_sprite(*s,regoin,iso, Vec2::new(480.0, 480.0), s_i);
+                let iso = Isometry3::new(Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Rotor3::default());
+                dbg!(iso);
+                rs.render_sprite(*s,regoin,iso, Vec2::new(1024.0, 720.0), s_i);
             }
         }
         
@@ -229,7 +224,6 @@ impl engine::World for GameState {
         }
     }
     
-        
     fn handle_query_pool_results(&mut self, query_pool_results: &[u32; NUM_CLUES]) {
         if self.check_clues {
             query_pool_results.iter().enumerate().for_each(|(index, num_pixels)| {
@@ -251,7 +245,7 @@ fn main() -> Result<()> {
 
     let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
 
-    let camera = camera::Camera::look_at(Vec3::new(0., -2., -10.), Vec3::zero(), Vec3::unit_y());
+    let camera = camera::Camera::look_at(Vec3::new(0., -2., -10.), Vec3::zero(), Vec3::unit_y(), camera::Projection::Perspective{fov: PI/2.0});
     engine.set_camera(camera);
 
     let mut stuff = GameStuff {

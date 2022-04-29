@@ -1,9 +1,12 @@
 use crate::animation;
 use crate::assets::{self, Assets};
 use crate::camera::Camera;
+use crate::camera;
 use crate::input;
 use crate::input::Input;
 use crate::renderer;
+use crate::types;
+pub use std::f32::consts::PI;
 use crate::renderer::flat::NUM_CLUES;
 use crate::vulkan::Vulkan;
 use crate::Isometry3;
@@ -75,7 +78,7 @@ impl Engine {
             .with_title(ws.title);
         let input = input::Input::new();
         let default_cam =
-            Camera::look_at(Vec3::new(0., 0., 0.), Vec3::new(0., 0., 1.), Vec3::unit_y());
+            Camera::look_at(Vec3::new(0., 0., 0.), Vec3::new(0., 0., 1.), Vec3::unit_y(), camera::Projection::Perspective{fov: PI/2.0});
         let mut vulkan = Vulkan::new(wb, &event_loop);
         Self {
             assets: Assets::new(),

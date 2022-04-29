@@ -13,6 +13,12 @@ pub struct Rect {
 }
 
 impl Rect {
+     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
+        Self {
+            pos: Vec2::new(x, y),
+            sz: Vec2::new(w, h),
+        }
+    }
     pub fn contains(&self, other: Rect) -> bool {
         let br = self.pos + self.sz;
         let obr = other.pos + other.sz;

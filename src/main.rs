@@ -11,6 +11,7 @@ use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
 use crate::camera::Camera;
 use winit::event::VirtualKeyCode;
+use renderer::sprites::SingleRenderState as FSprite;
 
 
 mod animation;
@@ -83,7 +84,7 @@ pub struct GameStuff {
     //osborn has work arounds??? ^^^
     textured: Vec<Textured>,
     flats: Vec<Flat>,
-    textures: Vec<assets::TextureRef>,
+    textures: Vec<Sprite>,
 }
 impl GameStuff {
     fn new(
@@ -91,7 +92,7 @@ impl GameStuff {
         objects: HashMap<usize, Box<dyn object::Object>>,
         textured: Vec<Textured>,
         flats: Vec<Flat>,
-        textures: Vec<assets::TextureRef>) -> GameStuff {
+        textures: Vec<Sprite>) -> GameStuff {
         GameStuff {
             rooms,
             objects,
@@ -175,14 +176,41 @@ impl engine::World for GameState {
 
 
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) {
-        let camera; 
+        let mut camera; 
         match self.game_mode{
             GameMode::GamePlay => {
+                
                 camera = self.player.get_camera();
             }
             _ => {
+                camera = self.player.get_camera();
+                camera.projection = camera::Projection::Orthographic{width: 100.0, depth: 100.0};
                 //let iso = Mat4::look_at(eye, at, up).into_isometry();
-                camera = Camera::look_at(ORIGIN, Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Vec3::unit_y(), camera::Projection::Orthographic{width: WIDTH, depth: 10.0});
+                //camera = Camera::look_at(ORIGIN, Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Vec3::unit_y(), camera::Projection::Orthographic{width: WIDTH, depth: 10.0});
+                //let sim = Similarity3::new(ORIGIN, Rotor3::default());
+                //camera = Camera::from_transform(Similarity3::identity(), camera::Projection::Orthographic{width: WIDTH, depth: 10.0});
+                /*camera = Camera::from_transform(
+                    Similarity3::new(
+                        Vec3::new(0.0, 0.0, -500.0),
+                        Rotor3::from_rotation_yz(PI / 2.0),
+                        1.0,
+                    ),
+                    camera::Projection::Orthographic {
+                        width: 1000.0,
+                        depth: 1000.0,
+                    },
+                );*/
+
+
+                  /*camera = Camera::look_at(
+                        Vec3::new(0.0, 500.0, 0.0),
+                        Vec3::new(0.0, 0.0, 0.0),
+                        -Vec3::unit_z(),
+                        camera::Projection::Orthographic {
+                            width: 1000.0,
+                            depth: 1000.0,
+                        },
+                    );*/
             }
             
         } 
@@ -195,14 +223,7 @@ impl engine::World for GameState {
 
     
            // dbg!(self.game_mode.clone());
-         if let GameMode::ClueDisplay = self.game_mode{
-            for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
-                let regoin =  Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(1240.0, 720.0)};
-                let iso = Isometry3::new(Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Rotor3::default());
-                dbg!(iso);
-                rs.render_sprite(*s,regoin,iso, Vec2::new(1024.0, 720.0), s_i);
-            }
-        }
+         
         
         for (_, object) in self.stuff.objects.iter() {
             match object.get_renderable() {
@@ -221,6 +242,41 @@ impl engine::World for GameState {
                 // }
                 None => (),
             }
+        }
+
+        if let GameMode::ClueDisplay = self.game_mode{
+             for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
+                dbg!(s.trf);
+                rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
+        }
+            /*for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
+                let regoin =  Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(480.0, 480.0)};
+                //let mut iso = Isometry3::identity();
+                /*
+                tested:
+                changing only rotation
+                changing just z translation
+                changing just x translation
+
+                changing z and x 
+                chaning z and rotation
+                changing x and rotation 
+
+                changing rotation, x and z
+                chanigng the above three and scale of rotor 
+
+                */
+
+                /*iso.translation.z = 5.0;
+                iso.translation.x = 480.0;
+                iso.rotation.bv.xz = PI.to_radians();
+                iso.rotation.s = 200.0;*/
+                let iso = Isometry3::new(Vec3::new(20.0, 5.0, -10.0), Rotor3::identity());
+                //Isometry3::new(Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Rotor3::default());
+                dbg!(iso);
+                
+                s.render_sprite(s_i, s.tex, FSprite::new(s.cel, s.trf, s.size));
+            }*/
         }
     }
     
@@ -265,8 +321,25 @@ fn main() -> Result<()> {
         ),
         model: flat_model,
     });
-    let texture = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
-    stuff.textures.push(texture);
+    dbg!(stuff.flats[0].trf);
+    let king = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
+    //let texture = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
+   /* stuff.textures.push(Sprite {
+            trf: Isometry3::new(Vec3::new(20.0, -100.0, -10.0), Rotor3::identity()),
+            size: Vec2::new(1024.0, 720.0),
+            cel: Rect::new(0.0, 0.0, 1024.0, 720.0),
+            tex: king,
+        });*/
+
+        stuff.textures.push(Sprite {
+            trf: Isometry3::new(
+            Vec3::new(0.0, 0.0, 10.0),
+            Rotor3::from_rotation_yz(90.0f32.to_radians())
+        ),
+            size: Vec2::new(1024.0, 720.0),
+            cel: Rect::new(0.0, 0.0, 1024.0, 720.0),
+            tex: king,
+        });
 
     stuff.objects.insert(
         0,

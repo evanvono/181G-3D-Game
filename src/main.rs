@@ -1,22 +1,22 @@
 #![allow(dead_code)]
 
+use crate::camera::Camera;
 use crate::engine::Engine;
 use crate::engine::WindowSettings;
 use crate::renderer::flat::NUM_CLUES;
 pub use color_eyre;
 use color_eyre::eyre::Result;
+use renderer::sprites::SingleRenderState as FSprite;
 use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
-use crate::camera::Camera;
+pub use ultraviolet::{Bivec3};
 use winit::event::VirtualKeyCode;
-use renderer::sprites::SingleRenderState as FSprite;
 
-
+mod anim_2d;
 mod animation;
 mod assets;
-mod anim_2d;
 mod camera;
 mod engine;
 mod image;
@@ -35,18 +35,18 @@ const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
 const WIDTH: f32 = 1024.0;
 const CLUE_FOUND_MIN_PIXELS: u32 = 1000;
-const ORIGIN: Vec3 = Vec3::new(0.0,0.0,0.0);
+const ORIGIN: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 
 const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::Space;
 const SNAP: VirtualKeyCode = VirtualKeyCode::S;
 const NEXT: VirtualKeyCode = VirtualKeyCode::N;
 
 #[derive(Debug, Clone)]
-pub enum GameMode{
+pub enum GameMode {
     StartScene,
     GamePlay,
     ClueDisplay,
-    EndScene
+    EndScene,
 }
 #[derive(Debug)]
 struct GenericGameThing {}
@@ -92,7 +92,8 @@ impl GameStuff {
         objects: HashMap<usize, Box<dyn object::Object>>,
         textured: Vec<Textured>,
         flats: Vec<Flat>,
-        textures: Vec<Sprite>) -> GameStuff {
+        textures: Vec<Sprite>,
+    ) -> GameStuff {
         GameStuff {
             rooms,
             objects,
@@ -157,34 +158,33 @@ impl engine::World for GameState {
     fn update(&mut self, input: &input::Input, _assets: &mut assets::Assets) {
         let player = &mut self.player;
         player.move_with_input(input);
-        
-        if let GameMode::ClueDisplay = self.game_mode{
-                if input.is_key_pressed(NEXT){
-                            self.game_mode = GameMode::GamePlay;
-                            self.player.unpause_rotation();
-                        }
+
+        if let GameMode::ClueDisplay = self.game_mode {
+            if input.is_key_pressed(NEXT) {
+                self.game_mode = GameMode::GamePlay;
+                self.player.unpause_rotation();
+            }
         }
-    
+
         if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity {
             self.game_mode = GameMode::ClueDisplay;
-            self.player.pause_rotation();
+            //self.player.pause_rotation();
             self.check_clues = true;
             self.film_used += 1;
         }
-
     }
 
-
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) {
-        let mut camera; 
-        match self.game_mode{
+        let  mut camera;
+        match self.game_mode {
             GameMode::GamePlay => {
-                
                 camera = self.player.get_camera();
             }
             _ => {
-                camera = self.player.get_camera();
-                camera.projection = camera::Projection::Orthographic{width: 100.0, depth: 100.0};
+                //camera = self.player.get_camera();
+                //camera.transform.rotation = Rotor3::identity();
+
+                //camera.projection = camera::Projection::Orthographic{width: 100.0, depth: 100.0};
                 //let iso = Mat4::look_at(eye, at, up).into_isometry();
                 //camera = Camera::look_at(ORIGIN, Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Vec3::unit_y(), camera::Projection::Orthographic{width: WIDTH, depth: 10.0});
                 //let sim = Similarity3::new(ORIGIN, Rotor3::default());
@@ -200,20 +200,47 @@ impl engine::World for GameState {
                         depth: 1000.0,
                     },
                 );*/
+                /*camera = self.player.get_camera();
+                camera.projection = camera::Projection::Orthographic {
+                        width: 1000.0,
+                        depth: 1000.0,
+                    };*/
+                     camera = Camera {
+    transform: Similarity3 {
+        translation: Vec3 {
+            x: -0.0,
+            y: -1.1896458,
+            z: 1.6077139,
+        },
+        rotation: Rotor3 {
+            s: 0.027270082,
+            bv: Bivec3 {
+                xy: -0.4498885,
+                xz: -0.89256245,
+                yz: 0.013743621,
+            },
+        },
+        scale: 1.0,
+    },
+    ratio: 1.3333334,
+    projection: camera::Projection::Orthographic {
+        width: 1000.0,
+        depth: 1000.0,
+    },
+}
 
 
-                  /*camera = Camera::look_at(
-                        Vec3::new(0.0, 500.0, 0.0),
-                        Vec3::new(0.0, 0.0, 0.0),
-                        -Vec3::unit_z(),
-                        camera::Projection::Orthographic {
-                            width: 1000.0,
-                            depth: 1000.0,
-                        },
-                    );*/
+                /*camera = Camera::look_at(
+                    Vec3::new(0.0, 500.0, 0.0),
+                    Vec3::new(0.0, 0.0, 0.0),
+                    -Vec3::unit_z(),
+                    camera::Projection::Orthographic {
+                        width: 1000.0,
+                        depth: 1000.0,
+                    },
+                );*/
             }
-            
-        } 
+        }
         dbg!(camera);
         rs.set_camera(camera);
 
@@ -221,11 +248,44 @@ impl engine::World for GameState {
         //     rs.render_skinned(obj.model.clone(), obj.animation, obj.state, obj.trf, obj_i);
         // }
 
-    
-           // dbg!(self.game_mode.clone());
-         
-        
-        for (_, object) in self.stuff.objects.iter() {
+        // dbg!(self.game_mode.clone());
+
+        if let GameMode::ClueDisplay = self.game_mode {
+            for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
+                //dbg!(s.trf);
+                rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
+            }
+            /*for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
+                let regoin =  Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(480.0, 480.0)};
+                //let mut iso = Isometry3::identity();
+                /*
+                tested:
+                changing only rotation
+                changing just z translation
+                changing just x translation
+
+                changing z and x
+                chaning z and rotation
+                changing x and rotation
+
+                changing rotation, x and z
+                chanigng the above three and scale of rotor
+
+                */
+
+                /*iso.translation.z = 5.0;
+                iso.translation.x = 480.0;
+                iso.rotation.bv.xz = PI.to_radians();
+                iso.rotation.s = 200.0;*/
+                let iso = Isometry3::new(Vec3::new(20.0, 5.0, -10.0), Rotor3::identity());
+                //Isometry3::new(Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Rotor3::default());
+                dbg!(iso);
+
+                s.render_sprite(s_i, s.tex, FSprite::new(s.cel, s.trf, s.size));
+            }*/
+        }
+        else{
+            for (_, object) in self.stuff.objects.iter() {
             match object.get_renderable() {
                 Some(RenderType::Flat(id)) => {
                     let m = self.stuff.flats.get(id).unwrap();
@@ -243,43 +303,9 @@ impl engine::World for GameState {
                 None => (),
             }
         }
-
-        if let GameMode::ClueDisplay = self.game_mode{
-             for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
-                dbg!(s.trf);
-                rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
-        }
-            /*for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
-                let regoin =  Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(480.0, 480.0)};
-                //let mut iso = Isometry3::identity();
-                /*
-                tested:
-                changing only rotation
-                changing just z translation
-                changing just x translation
-
-                changing z and x 
-                chaning z and rotation
-                changing x and rotation 
-
-                changing rotation, x and z
-                chanigng the above three and scale of rotor 
-
-                */
-
-                /*iso.translation.z = 5.0;
-                iso.translation.x = 480.0;
-                iso.rotation.bv.xz = PI.to_radians();
-                iso.rotation.s = 200.0;*/
-                let iso = Isometry3::new(Vec3::new(20.0, 5.0, -10.0), Rotor3::identity());
-                //Isometry3::new(Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Rotor3::default());
-                dbg!(iso);
-                
-                s.render_sprite(s_i, s.tex, FSprite::new(s.cel, s.trf, s.size));
-            }*/
         }
     }
-    
+
     fn handle_query_pool_results(&mut self, query_pool_results: &[u32; NUM_CLUES]) {
         if self.check_clues {
             query_pool_results.iter().enumerate().for_each(|(index, num_pixels)| {
@@ -288,7 +314,7 @@ impl engine::World for GameState {
                     println!{"(Found clue #{:?}) Fascinating! I wonder if this is part of the crime...", index};
                 }
             });
-            println!{"Film remaining: {:?}", self.player.film_capacity - self.film_used };
+            println! {"Film remaining: {:?}", self.player.film_capacity - self.film_used };
             self.check_clues = false
         }
     }
@@ -301,7 +327,12 @@ fn main() -> Result<()> {
 
     let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
 
-    let camera = camera::Camera::look_at(Vec3::new(0., -2., -10.), Vec3::zero(), Vec3::unit_y(), camera::Projection::Perspective{fov: PI/2.0});
+    let camera = camera::Camera::look_at(
+        Vec3::new(0., -2., -10.),
+        Vec3::zero(),
+        Vec3::unit_y(),
+        camera::Projection::Perspective { fov: PI / 2.0 },
+    );
     engine.set_camera(camera);
 
     let mut stuff = GameStuff {
@@ -321,25 +352,26 @@ fn main() -> Result<()> {
         ),
         model: flat_model,
     });
+
     dbg!(stuff.flats[0].trf);
     let king = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
     //let texture = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
-   /* stuff.textures.push(Sprite {
-            trf: Isometry3::new(Vec3::new(20.0, -100.0, -10.0), Rotor3::identity()),
-            size: Vec2::new(1024.0, 720.0),
-            cel: Rect::new(0.0, 0.0, 1024.0, 720.0),
-            tex: king,
-        });*/
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(20.0, 5.0, -10.0), Rotor3::identity()),
+        size: Vec2::new(100.0, 100.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: king,
+    });
 
-        stuff.textures.push(Sprite {
-            trf: Isometry3::new(
-            Vec3::new(0.0, 0.0, 10.0),
-            Rotor3::from_rotation_yz(90.0f32.to_radians())
-        ),
-            size: Vec2::new(1024.0, 720.0),
-            cel: Rect::new(0.0, 0.0, 1024.0, 720.0),
-            tex: king,
-        });
+    /*stuff.textures.push(Sprite {
+        trf: Isometry3::new(
+        Vec3::new(0.0, 0.0, 10.0),
+        Rotor3::identity(),
+    ),
+        size: Vec2::new(1024.0, 720.0),
+        cel: Rect::new(0.0, 0.0, 1024.0, 720.0),
+        tex: king,
+    });*/
 
     stuff.objects.insert(
         0,

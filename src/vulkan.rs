@@ -1,28 +1,28 @@
+use std::sync::Arc;
 use vulkano::command_buffer::PrimaryAutoCommandBuffer;
-use vulkano::image::ImageAccess;
-use winit::window::Window;
-use vulkano::image::AttachmentImage;
+use vulkano::device::physical::{PhysicalDevice, PhysicalDeviceType};
+use vulkano::device::Device;
+use vulkano::device::DeviceExtensions;
 use vulkano::image::view::ImageView;
+use vulkano::image::AttachmentImage;
+use vulkano::image::ImageAccess;
+use vulkano::image::ImageUsage;
+use vulkano::image::SwapchainImage;
+use vulkano::instance::Instance;
+use vulkano::pipeline::graphics::viewport::Viewport;
 use vulkano::render_pass::Framebuffer;
 use vulkano::render_pass::RenderPass;
-use vulkano::image::SwapchainImage;
-use vulkano::image::ImageUsage;
-use vulkano::device::Device;
-use vulkano::instance::Instance;
-use vulkano::device::physical::{PhysicalDevice, PhysicalDeviceType};
-use vulkano::device::DeviceExtensions;
-use vulkano::pipeline::graphics::viewport::Viewport;
-use vulkano::swapchain::{self,Swapchain,AcquireError,SwapchainCreationError};
-use std::sync::Arc;
+use vulkano::swapchain::{self, AcquireError, Swapchain, SwapchainCreationError};
 use vulkano::sync::{self, GpuFuture};
 use winit::event_loop::EventLoop;
+use winit::window::Window;
 use winit::window::WindowBuilder;
 
 pub struct Vulkan {
     pub surface: Arc<vulkano::swapchain::Surface<winit::window::Window>>,
     pub device: Arc<vulkano::device::Device>,
-    pub present_mode:vulkano::swapchain::PresentMode,
-    pub min_image_count:u32,
+    pub present_mode: vulkano::swapchain::PresentMode,
+    pub min_image_count: u32,
     pub queue: Arc<vulkano::device::Queue>,
     pub render_pass: Arc<vulkano::render_pass::RenderPass>,
     pub swapchain: Arc<Swapchain<winit::window::Window>>,
@@ -39,15 +39,13 @@ impl Vulkan {
             ext_debug_report: true,
             ..vulkano_win::required_extensions()
         };
-        let instance = Instance::new(
-            vulkano::instance::InstanceCreateInfo {
-                enabled_extensions:required_extensions,
-                enabled_layers:vec!["VK_LAYER_KHRONOS_validation".to_string()],
-                max_api_version:Some(vulkano::Version::V1_2),
-                ..Default::default()
-            }
-        )
-            .unwrap();
+        let instance = Instance::new(vulkano::instance::InstanceCreateInfo {
+            enabled_extensions: required_extensions,
+            enabled_layers: vec!["VK_LAYER_KHRONOS_validation".to_string()],
+            max_api_version: Some(vulkano::Version::V1_2),
+            ..Default::default()
+        })
+        .unwrap();
 
         use vulkano::instance::debug::{DebugCallback, MessageSeverity, MessageType};
         let _callback = DebugCallback::new(
@@ -58,7 +56,7 @@ impl Vulkan {
                 println!("Debug callback: {:?}", msg.description);
             },
         )
-            .ok();
+        .ok();
 
         use vulkano_win::VkSurfaceBuild;
         let surface = wb.build_vk_surface(event_loop, instance.clone()).unwrap();
@@ -70,7 +68,9 @@ impl Vulkan {
             .filter(|&p| p.supported_extensions().is_superset_of(&device_extensions))
             .filter_map(|p| {
                 p.queue_families()
-                    .find(|&q| q.supports_graphics() && q.supports_surface(&surface).unwrap_or(false))
+                    .find(|&q| {
+                        q.supports_graphics() && q.supports_surface(&surface).unwrap_or(false)
+                    })
                     .map(|q| (p, q))
             })
             .min_by_key(|(p, _)| match p.properties().device_type {
@@ -84,33 +84,37 @@ impl Vulkan {
         let (device, mut queues) = Device::new(
             physical_device,
             vulkano::device::DeviceCreateInfo {
-                enabled_extensions:physical_device
-                .required_extensions()
+                enabled_extensions: physical_device
+                    .required_extensions()
                     .union(&device_extensions),
-                queue_create_infos:vec![vulkano::device::QueueCreateInfo::family(queue_family)],
+                queue_create_infos: vec![vulkano::device::QueueCreateInfo::family(queue_family)],
                 ..Default::default()
-            }
+            },
         )
-            .unwrap();
+        .unwrap();
         let present_mode = Self::best_present_mode(&physical_device, &surface);
-        let caps = physical_device.surface_capabilities(&surface, vulkano::swapchain::SurfaceInfo::default()).unwrap();
-        let min_image_count = caps.min_image_count+1;
+        let caps = physical_device
+            .surface_capabilities(&surface, vulkano::swapchain::SurfaceInfo::default())
+            .unwrap();
+        let min_image_count = caps.min_image_count + 1;
         let queue = queues.next().unwrap();
         let (swapchain, images) = {
             let dimensions: [u32; 2] = surface.window().inner_size().into();
-            Swapchain::new(device.clone(), surface.clone(),
-                           vulkano::swapchain::SwapchainCreateInfo {
-                               image_extent:dimensions,
-                               image_usage:ImageUsage::color_attachment(),
-                               min_image_count,
-                               present_mode,
-                               ..Default::default()
-                           }
-            ).unwrap()
+            Swapchain::new(
+                device.clone(),
+                surface.clone(),
+                vulkano::swapchain::SwapchainCreateInfo {
+                    image_extent: dimensions,
+                    image_usage: ImageUsage::color_attachment(),
+                    min_image_count,
+                    present_mode,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
         };
         surface.window().set_cursor_visible(false);
 
-        
         let render_pass = vulkano::single_pass_renderpass!(
             device.clone(),
             attachments: {
@@ -140,8 +144,12 @@ impl Vulkan {
             depth_range: 0.0..1.0,
         };
 
-        let framebuffers =
-            Self::window_size_dependent_setup(device.clone(), &images, render_pass.clone(), &mut viewport);
+        let framebuffers = Self::window_size_dependent_setup(
+            device.clone(),
+            &images,
+            render_pass.clone(),
+            &mut viewport,
+        );
         let recreate_swapchain = false;
         let previous_frame_end = Some(sync::now(device.clone()).boxed());
 
@@ -160,7 +168,7 @@ impl Vulkan {
         }
     }
     fn window_size_dependent_setup(
-        device:Arc<Device>,
+        device: Arc<Device>,
         images: &[Arc<SwapchainImage<Window>>],
         render_pass: Arc<RenderPass>,
         viewport: &mut Viewport,
@@ -181,15 +189,19 @@ impl Vulkan {
                             transient_attachment: true,
                             ..ImageUsage::none()
                         },
-                    ).unwrap(),
-                ).unwrap();
+                    )
+                    .unwrap(),
+                )
+                .unwrap();
 
-                Framebuffer::new(render_pass.clone(),
-                                 vulkano::render_pass::FramebufferCreateInfo {
-                                     attachments:vec![view,depth_buffer],
-                                     ..Default::default()
-                                 }
-                ).unwrap()
+                Framebuffer::new(
+                    render_pass.clone(),
+                    vulkano::render_pass::FramebufferCreateInfo {
+                        attachments: vec![view, depth_buffer],
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
             })
             .collect::<Vec<_>>()
     }
@@ -205,20 +217,20 @@ impl Vulkan {
         }
         if self.recreate_swapchain {
             let dimensions: [u32; 2] = self.surface.window().inner_size().into();
-            let (new_swapchain, new_images) = match self
-                .swapchain
-                .recreate(vulkano::swapchain::SwapchainCreateInfo {
-                    image_extent:dimensions,
-                    image_usage:ImageUsage::color_attachment(),
-                    present_mode:self.present_mode,
-                    min_image_count:self.min_image_count,
-                    ..Default::default()
-                })
-            {
-                Ok(r) => r,
-                Err(SwapchainCreationError::ImageExtentNotSupported{..}) => return,
-                Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
-            };
+            let (new_swapchain, new_images) =
+                match self
+                    .swapchain
+                    .recreate(vulkano::swapchain::SwapchainCreateInfo {
+                        image_extent: dimensions,
+                        image_usage: ImageUsage::color_attachment(),
+                        present_mode: self.present_mode,
+                        min_image_count: self.min_image_count,
+                        ..Default::default()
+                    }) {
+                    Ok(r) => r,
+                    Err(SwapchainCreationError::ImageExtentNotSupported { .. }) => return,
+                    Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
+                };
 
             self.swapchain = new_swapchain;
             self.framebuffers = Self::window_size_dependent_setup(
@@ -233,9 +245,12 @@ impl Vulkan {
 
     fn best_present_mode<W>(
         dev: &vulkano::device::physical::PhysicalDevice,
-        surf:&vulkano::swapchain::Surface<W>,
+        surf: &vulkano::swapchain::Surface<W>,
     ) -> vulkano::swapchain::PresentMode {
-        dev.surface_present_modes(surf).unwrap().find(|m| [vulkano::swapchain::PresentMode::Mailbox].contains(m)).unwrap_or(vulkano::swapchain::PresentMode::Fifo)
+        dev.surface_present_modes(surf)
+            .unwrap()
+            .find(|m| [vulkano::swapchain::PresentMode::Mailbox].contains(m))
+            .unwrap_or(vulkano::swapchain::PresentMode::Fifo)
     }
 
     pub fn get_next_image(&mut self) -> Option<usize> {
@@ -258,17 +273,13 @@ impl Vulkan {
         };
         Some(image_num)
     }
-    pub fn execute_commands(&mut self, command_buffer:PrimaryAutoCommandBuffer, image_num:usize) {
+    pub fn execute_commands(&mut self, command_buffer: PrimaryAutoCommandBuffer, image_num: usize) {
         let old_fut = self.previous_frame_end.take();
         let future = old_fut
             .unwrap_or_else(|| vulkano::sync::now(self.device.clone()).boxed())
             .then_execute(self.queue.clone(), command_buffer)
             .unwrap()
-            .then_swapchain_present(
-                self.queue.clone(),
-                self.swapchain.clone(),
-                image_num,
-            )
+            .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_num)
             .then_signal_fence_and_flush();
 
         match future {
@@ -277,13 +288,11 @@ impl Vulkan {
             }
             Err(vulkano::sync::FlushError::OutOfDate) => {
                 self.recreate_swapchain = true;
-                self.previous_frame_end =
-                    Some(vulkano::sync::now(self.device.clone()).boxed());
+                self.previous_frame_end = Some(vulkano::sync::now(self.device.clone()).boxed());
             }
             Err(e) => {
                 println!("Failed to flush future: {:?}", e);
-                self.previous_frame_end =
-                    Some(vulkano::sync::now(self.device.clone()).boxed());
+                self.previous_frame_end = Some(vulkano::sync::now(self.device.clone()).boxed());
             }
         }
     }

@@ -20,8 +20,10 @@ use vulkano::pipeline::graphics::vertex_input::BuffersDefinition;
 use vulkano::pipeline::graphics::viewport::ViewportState;
 use vulkano::pipeline::GraphicsPipeline;
 use vulkano::pipeline::Pipeline;
+use vulkano::query::{
+    QueryControlFlags, QueryPool, QueryPoolCreateInfo, QueryResultFlags, QueryType,
+};
 use vulkano::render_pass::Subpass;
-use vulkano::query::{QueryControlFlags, QueryPool, QueryPoolCreateInfo, QueryResultFlags, QueryType};
 
 pub const NUM_CLUES: usize = 1;
 pub const OTHER_FLATS: usize = 1;
@@ -58,7 +60,11 @@ impl Model {
     }
 }
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct ModelKey(assets::MeshRef<Mesh>, assets::MaterialRef<Material>, Option<usize>);
+pub(crate) struct ModelKey(
+    assets::MeshRef<Mesh>,
+    assets::MaterialRef<Material>,
+    Option<usize>,
+);
 
 #[repr(C)]
 #[derive(Default, Debug, Clone, Copy, Pod, Zeroable)]
@@ -112,18 +118,19 @@ pub struct Renderer {
     uniform_binding: Option<Arc<SingleLayoutDescSet>>,
     instance_pool: CpuBufferPool<InstanceData, Arc<vulkano::memory::pool::StdMemoryPool>>,
     batches: HashMap<ModelKey, BatchData>,
-    pub query_pool: Arc<QueryPool>
+    pub query_pool: Arc<QueryPool>,
 }
 
 impl Renderer {
     pub fn new(vulkan: &mut Vulkan) -> Self {
         let query_pool = QueryPool::new(
-            vulkan.device.clone(), 
+            vulkan.device.clone(),
             QueryPoolCreateInfo {
                 query_count: NUM_CLUES as u32,
                 ..QueryPoolCreateInfo::query_type(QueryType::Occlusion)
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         mod vs {
             vulkano_shaders::shader! {
@@ -211,7 +218,7 @@ void main() {
             instance_pool,
             batches: HashMap::new(),
             uniform_binding: None,
-            query_pool
+            query_pool,
         }
     }
     pub(crate) fn push_model(
@@ -238,7 +245,7 @@ void main() {
         pipeline: Arc<vulkano::pipeline::GraphicsPipeline>,
         mesh: &Mesh,
         material: &Material,
-        pool_key: Option<usize>
+        pool_key: Option<usize>,
     ) -> BatchData {
         BatchData {
             verts: mesh.verts.clone(),
@@ -256,14 +263,20 @@ void main() {
         }
     }
     pub fn prepare(&mut self, rs: &super::RenderState, assets: &assets::Assets, camera: &Camera) {
-        for (k,v) in rs.flats.iter() { // match k,v to get render keys as well => e.g. keys 1000...1005 are evidence 
-            let key = if k.0 >= OTHER_FLATS && k.0 < (NUM_CLUES + OTHER_FLATS) { Some(k.0 - OTHER_FLATS) } else { None }; 
+        for (k, v) in rs.flats.iter() {
+            // match k,v to get render keys as well => e.g. keys 1000...1005 are evidence
+            let key = if k.0 >= OTHER_FLATS && k.0 < (NUM_CLUES + OTHER_FLATS) {
+                Some(k.0 - OTHER_FLATS)
+            } else {
+                None
+            };
             for (meshr, matr) in v.model.meshes.iter().zip(v.model.materials.iter()) {
                 let mesh = assets.flat_mesh(*meshr);
                 let mat = assets.material(*matr);
-                self.push_model(ModelKey(*meshr, *matr, key), mesh, mat, v.transform); // pass key through this as well to have access in draw
-            } 
-        } // anytying drawn during query 
+                self.push_model(ModelKey(*meshr, *matr, key), mesh, mat, v.transform);
+                // pass key through this as well to have access in draw
+            }
+        } // anytying drawn during query
         self.prepare_draw(camera);
     }
     fn prepare_draw(&mut self, camera: &Camera) {
@@ -288,7 +301,13 @@ void main() {
         for (_b, dat) in self.batches.iter() {
             // matchh if there's some key then draw with query, otherwise draw without
             if let Some(key) = _b.2 {
-                dat.draw_with_query(self.pipeline.clone(), uds.clone(), builder, &self.query_pool, key);
+                dat.draw_with_query(
+                    self.pipeline.clone(),
+                    uds.clone(),
+                    builder,
+                    &self.query_pool,
+                    key,
+                );
             } else {
                 dat.draw(self.pipeline.clone(), uds.clone(), builder);
             }
@@ -352,12 +371,15 @@ impl BatchData {
         unis: Arc<vulkano::descriptor_set::single_layout_pool::SingleLayoutDescSet>,
         builder: &mut AutoCommandBufferBuilder<P, L>,
         query_pool: &Arc<QueryPool>,
-        key: usize
+        key: usize,
     ) {
-
         unsafe {
             builder
-                .begin_query(query_pool.clone(), key as u32, QueryControlFlags { precise: false } )
+                .begin_query(
+                    query_pool.clone(),
+                    key as u32,
+                    QueryControlFlags { precise: false },
+                )
                 .unwrap()
                 .bind_vertex_buffers(0, [self.verts.clone()])
                 .bind_vertex_buffers(1, [self.instance_buf.clone().unwrap()])
@@ -386,7 +408,7 @@ impl BatchData {
                 .unwrap();
         }
     }
-    // fn draw_with_query - pass in query pool, initialize query pool, .... 
+    // fn draw_with_query - pass in query pool, initialize query pool, ....
     // add some public function to pass the data back to let us know the query results
     // might just make sense to draw evey evidence (draw in same order) each time, that way we get same number of queries
     fn clear_frame(&mut self) {

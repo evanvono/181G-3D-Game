@@ -15,7 +15,7 @@ impl Camera {
         let iso = Mat4::look_at(eye, at, up).into_isometry();
         Self::from_transform(Similarity3::new(iso.translation, iso.rotation, 1.0), proj)
     }
-    pub fn look_at_degrees(eye: Vec3, up: Vec3, deg: (f32,f32)) -> Camera {
+    pub fn look_at_degrees(eye: Vec3, up: Vec3, deg: (f32, f32)) -> Camera {
         // for changes in the x axis rotation, we change y and z values
         // for changes in the y axis rotation, we change x and z values
         let theta = deg.0;
@@ -24,7 +24,7 @@ impl Camera {
         let y = eye.y + rho.to_radians().cos();
         let z = eye.z + rho.to_radians().sin() * theta.to_radians().cos();
         let at = Vec3 { x, y, z };
-        Self::look_at(eye, at, up, Projection::Perspective{fov: PI/2.0})
+        Self::look_at(eye, at, up, Projection::Perspective { fov: PI / 2.0 })
     }
     pub fn from_transform(s: Similarity3, proj: Projection) -> Self {
         Self {

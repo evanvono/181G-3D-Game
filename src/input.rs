@@ -11,7 +11,7 @@ pub struct Input {
     prev_mouse_down: bool,
     mouse_position: winit::dpi::PhysicalPosition<f64>,
     prev_mouse_position: winit::dpi::PhysicalPosition<f64>,
-    mouse_delta: (f64,f64)
+    mouse_delta: (f64, f64),
 }
 impl Input {
     pub(crate) fn new() -> Self {
@@ -22,7 +22,7 @@ impl Input {
             prev_mouse_down: false,
             mouse_position: winit::dpi::PhysicalPosition { x: 0.0, y: 0.0 },
             prev_mouse_position: winit::dpi::PhysicalPosition { x: 0.0, y: 0.0 },
-            mouse_delta: (0.,0.)
+            mouse_delta: (0., 0.),
         }
     }
     pub fn is_key_down(&self, kc: VirtualKeyCode) -> bool {
@@ -41,7 +41,7 @@ impl Input {
         self.prev_keys.copy_from_slice(&self.now_keys);
         self.prev_mouse_down = self.mouse_down;
         self.prev_mouse_position = self.mouse_position;
-        self.mouse_delta = (0.,0.)
+        self.mouse_delta = (0., 0.)
     }
     pub(crate) fn handle_key_event(&mut self, ke: winit::event::KeyboardInput) {
         if let winit::event::KeyboardInput {
@@ -67,7 +67,7 @@ impl Input {
         self.mouse_position = cp;
     }
 
-    pub(crate) fn handle_cursor_motion(&mut self, delta: (f64,f64)) {
+    pub(crate) fn handle_cursor_motion(&mut self, delta: (f64, f64)) {
         self.mouse_delta = delta;
     }
 
@@ -80,11 +80,13 @@ impl Input {
     }
 
     pub fn get_mouse_delta(&self) -> winit::dpi::PhysicalPosition<f64> {
-        winit::dpi::PhysicalPosition { x: self.mouse_delta.0, y: self.mouse_delta.1 }
+        winit::dpi::PhysicalPosition {
+            x: self.mouse_delta.0,
+            y: self.mouse_delta.1,
+        }
     }
 
     pub(crate) fn get_mouse_move_scale() -> f32 {
         MOUSE_MOVE_SCALE
     }
-
 }

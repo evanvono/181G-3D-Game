@@ -1,5 +1,5 @@
-use color_eyre::eyre::Result;
 use super::types::*;
+use color_eyre::eyre::Result;
 pub struct Vec2i {
     pub x: u32,
     pub y: u32,

@@ -11,7 +11,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use thunderdome::{Arena, Index};
 use vulkano::image::immutable::ImmutableImage;
-use vulkano::sync::GpuFuture; 
+use vulkano::sync::GpuFuture;
 
 pub struct Texture {
     pub image: Image,

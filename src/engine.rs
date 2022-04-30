@@ -1,16 +1,16 @@
 use crate::animation;
 use crate::assets::{self, Assets};
-use crate::camera::Camera;
 use crate::camera;
+use crate::camera::Camera;
 use crate::input;
 use crate::input::Input;
 use crate::renderer;
-use crate::types;
-pub use std::f32::consts::PI;
 use crate::renderer::flat::NUM_CLUES;
+use crate::types;
 use crate::vulkan::Vulkan;
 use crate::Isometry3;
 use color_eyre::eyre::Result;
+pub use std::f32::consts::PI;
 use std::rc::Rc;
 use vulkano::query::{
     QueryControlFlags, QueryPool, QueryPoolCreateInfo, QueryResultFlags, QueryType,
@@ -66,7 +66,7 @@ pub struct Engine {
     dt: f64,
     acc: f64,
     last_frame: std::time::Instant,
-    query_results: [u32; NUM_CLUES]
+    query_results: [u32; NUM_CLUES],
 }
 
 impl Engine {
@@ -77,8 +77,12 @@ impl Engine {
             .with_inner_size(winit::dpi::LogicalSize::new(ws.w as f32, ws.h as f32))
             .with_title(ws.title);
         let input = input::Input::new();
-        let default_cam =
-            Camera::look_at(Vec3::new(0., 0., 0.), Vec3::new(0., 0., 1.), Vec3::unit_y(), camera::Projection::Perspective{fov: PI/2.0});
+        let default_cam = Camera::look_at(
+            Vec3::new(0., 0., 0.),
+            Vec3::new(0., 0., 1.),
+            Vec3::unit_y(),
+            camera::Projection::Perspective { fov: PI / 2.0 },
+        );
         let mut vulkan = Vulkan::new(wb, &event_loop);
         Self {
             assets: Assets::new(),
@@ -97,7 +101,7 @@ impl Engine {
             input,
             acc: 0.0,
             last_frame: std::time::Instant::now(),
-            query_results: [0u32; NUM_CLUES]
+            query_results: [0u32; NUM_CLUES],
         }
     }
     pub fn set_camera(&mut self, cam: Camera) {
@@ -291,7 +295,7 @@ impl Engine {
                 .begin_render_pass(
                     vulkan.framebuffers[image_num].clone(),
                     SubpassContents::Inline,
-                    vec![[0.0, 0.0, 0.0, 0.0].into(), (0.0).into()],
+                    vec![[1.0, 1.0, 1.0, 1.0].into(), (0.0).into()],
                 )
                 .unwrap()
                 .set_viewport(0, [vulkan.viewport.clone()]);
@@ -305,31 +309,32 @@ impl Engine {
         }
         let command_buffer = builder.build().unwrap();
 
-        self.flat_renderer.query_pool
-                .queries_range(0..NUM_CLUES as u32)
-                .unwrap()
-                .get_results(
-                    &mut self.query_results,
-                    QueryResultFlags {
-                        // Block the function call until the results are available.
-                        // Note: if not all the queries have actually been executed, then this
-                        // will wait forever for something that never happens!
-                        wait: false,
+        self.flat_renderer
+            .query_pool
+            .queries_range(0..NUM_CLUES as u32)
+            .unwrap()
+            .get_results(
+                &mut self.query_results,
+                QueryResultFlags {
+                    // Block the function call until the results are available.
+                    // Note: if not all the queries have actually been executed, then this
+                    // will wait forever for something that never happens!
+                    wait: false,
 
-                        // Blocking and waiting will never give partial results.
-                        partial: false,
+                    // Blocking and waiting will never give partial results.
+                    partial: false,
 
-                        // Blocking and waiting will ensure the results are always available after
-                        // the function returns.
-                        //
-                        // If you disable waiting, then this can be used to include the
-                        // availability of each query's results. You need one extra element per
-                        // query in your `query_results` buffer for this. This element will
-                        // be filled with a zero/nonzero value indicating availability.
-                        with_availability: false,
-                    },
-                )
-                .unwrap();
+                    // Blocking and waiting will ensure the results are always available after
+                    // the function returns.
+                    //
+                    // If you disable waiting, then this can be used to include the
+                    // availability of each query's results. You need one extra element per
+                    // query in your `query_results` buffer for this. This element will
+                    // be filled with a zero/nonzero value indicating availability.
+                    with_availability: false,
+                },
+            )
+            .unwrap();
 
         vulkan.execute_commands(command_buffer, image_num);
     }

@@ -152,7 +152,7 @@ void main() {
             .fragment_shader(fs.entry_point("main").unwrap(), ())
             .rasterization_state(
                 RasterizationState::new()
-                    .cull_mode(vulkano::pipeline::graphics::rasterization::CullMode::Back)
+                    .cull_mode(vulkano::pipeline::graphics::rasterization::CullMode::None)
                     .front_face(
                         vulkano::pipeline::graphics::rasterization::FrontFace::CounterClockwise,
                     ),

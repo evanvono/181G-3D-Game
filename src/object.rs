@@ -244,6 +244,19 @@ impl Player {
         self.pause_rot = false;
     }
 
+    pub fn reset_player(&mut self){
+        self.set_pos(self.default_pos);
+        self.set_deg(self.default_deg);
+    }
+
+    pub fn reset_pos(&mut self){
+        self.set_pos(self.default_pos);
+    }
+
+    pub fn reset_deg(&mut self){
+        self.set_deg(self.default_deg);
+    }
+
     pub fn move_with_input(&mut self, input: &input::Input) {
         let delta = input.get_mouse_delta();
 
@@ -299,14 +312,13 @@ impl Player {
         pos.x += (distance * theta.to_radians().sin()) as f32;
 
         if input.is_key_pressed(RESET_PLAYER) {
-            self.set_pos(self.default_pos);
-            self.set_deg(self.default_deg);
+            self.reset_player();
         } else if input.is_key_pressed(RESET_POS) {
-            self.set_pos(self.default_pos);
+            self.reset_pos();
             self.set_deg((cam_degrees_x, cam_degrees_y));
         } else if input.is_key_pressed(RESET_DEG) {
             self.set_pos(pos);
-            self.set_deg(self.default_deg);
+            self.reset_deg();
         } else {
             self.set_pos(pos);
             self.set_deg((cam_degrees_x, cam_degrees_y));

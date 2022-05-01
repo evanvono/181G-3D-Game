@@ -39,7 +39,7 @@ const ORIGIN: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 
 const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::Space;
 const SNAP: VirtualKeyCode = VirtualKeyCode::S;
-const NEXT: VirtualKeyCode = VirtualKeyCode::N;
+const NEXT: VirtualKeyCode = VirtualKeyCode::Return;
 
 #[derive(Debug, Clone)]
 pub enum GameMode {
@@ -131,6 +131,8 @@ pub struct GameState {
     goal_clues: usize,
     game_mode: GameMode,
     check_clues: bool,
+    graphic_display: Vec<bool>,
+    displayed: usize,
 }
 
 impl GameState {
@@ -148,8 +150,11 @@ impl GameState {
             film_used: 0,
             clues_found: [false; NUM_CLUES],
             goal_clues,
-            game_mode: GameMode::GamePlay,
+            game_mode: GameMode::StartScene,
             check_clues: false,
+            graphic_display: vec![true, false, false],
+            displayed: 0
+
         }
     }
 }
@@ -159,36 +164,44 @@ impl engine::World for GameState {
         let player = &mut self.player;
         player.move_with_input(input);
 
-        if let GameMode::ClueDisplay = self.game_mode {
-            if input.is_key_pressed(NEXT) {
+        if let GameMode::StartScene = self.game_mode {
+            if input.is_key_pressed(NEXT) && self.displayed >= 2{
                 self.game_mode = GameMode::GamePlay;
-                self.player.unpause_rotation();
+                self.displayed = 0;
+                self.player.reset_player();
+            }
+            else if input.is_key_pressed(NEXT){
+                self.graphic_display[self.displayed] = false;
+                self.displayed += 1;
+                self.graphic_display[self.displayed] = true;
             }
         }
 
-        if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity {
-            self.game_mode = GameMode::ClueDisplay;
+        if let GameMode::GamePlay = self.game_mode{
+            if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity {
+            //self.game_mode = GameMode::ClueDisplay;
             //self.player.pause_rotation();
             self.check_clues = true;
             self.film_used += 1;
         }
+        }
     }
 
     fn render(&mut self, _a: &mut assets::Assets, rs: &mut renderer::RenderState) {
-        let  mut camera;
+        let camera;
         match self.game_mode {
             GameMode::GamePlay => {
                 camera = self.player.get_camera();
             }
             _ => {
                 
-               camera = self.player.get_camera();
+               /*camera = self.player.get_camera();
                 camera.projection = camera::Projection::Orthographic {
                         width: 1000.0,
                         depth: 1000.0,
-                    };
-                 /*
-                 for the first panel
+                    };*/
+                 
+                //for the first panel
                  camera = Camera {
     transform: Similarity3 {
         translation: Vec3 {
@@ -207,17 +220,15 @@ impl engine::World for GameState {
         scale: 1.0,
     },
     ratio: 1.3333334,
-    projection: Orthographic {
+    projection: camera::Projection::Orthographic {
         width: 1000.0,
         depth: 1000.0,
     },
 }
 
-                 */ 
-
             }
         }
-        dbg!(camera);
+        
         rs.set_camera(camera);
 
         // for (obj_i, obj) in self.things.iter_mut().enumerate() {
@@ -226,10 +237,12 @@ impl engine::World for GameState {
 
         // dbg!(self.game_mode.clone());
 
-        if let GameMode::ClueDisplay = self.game_mode {
+        if let GameMode::StartScene = self.game_mode {
             for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
                 //dbg!(s.trf);
-                rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
+                if self.graphic_display[s_i]{
+                    rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
+                }
             }
             
         }
@@ -303,14 +316,28 @@ fn main() -> Result<()> {
     });
 
     dbg!(stuff.flats[0].trf);
-    let king = engine.load_texture(std::path::Path::new("content/comic_panel_1.png"))?;
-    //let texture = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
+    let intro = engine.load_texture(std::path::Path::new("content/comic_panel_1.png"))?;
+    let bios = engine.load_texture(std::path::Path::new("content/comic_bios.png"))?;
+    let news = engine.load_texture(std::path::Path::new("content/comic_news.png"))?;
     stuff.textures.push(Sprite {
         trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
         size: Vec2::new(900.0, 500.0),
         cel: Rect::new(0.0, 0.0, 1.0, 1.0),
-        tex: king,
+        tex: news,
     });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: intro,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: bios,
+    });
+     
 
     stuff.objects.insert(
         0,
@@ -343,16 +370,6 @@ fn main() -> Result<()> {
         )),
     );
 
-    // let tex = engine.load_texture(std::path::Path::new("content/skins/robot3.png"))?;
-    // let meshes = engine.load_textured(
-    //     std::path::Path::new("content/characterSmall.fbx")
-    // )?;
-    // let robot = engine.create_textured_model(meshes, vec![tex]);
-
-    // stuff.textured.push(Textured {
-    //     trf: Similarity3::new(Vec3::new(0.0, 0.0, -10.0), Rotor3::identity(), 5.0),
-    //     model: robot,
-    // });
     let game_state = GameState::new(stuff, START_ROOM, GOAL_CLUES);
     engine.play_world(game_state)
 }

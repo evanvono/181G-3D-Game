@@ -181,64 +181,38 @@ impl engine::World for GameState {
                 camera = self.player.get_camera();
             }
             _ => {
-                //camera = self.player.get_camera();
-                //camera.transform.rotation = Rotor3::identity();
-
-                //camera.projection = camera::Projection::Orthographic{width: 100.0, depth: 100.0};
-                //let iso = Mat4::look_at(eye, at, up).into_isometry();
-                //camera = Camera::look_at(ORIGIN, Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Vec3::unit_y(), camera::Projection::Orthographic{width: WIDTH, depth: 10.0});
-                //let sim = Similarity3::new(ORIGIN, Rotor3::default());
-                //camera = Camera::from_transform(Similarity3::identity(), camera::Projection::Orthographic{width: WIDTH, depth: 10.0});
-                /*camera = Camera::from_transform(
-                    Similarity3::new(
-                        Vec3::new(0.0, 0.0, -500.0),
-                        Rotor3::from_rotation_yz(PI / 2.0),
-                        1.0,
-                    ),
-                    camera::Projection::Orthographic {
-                        width: 1000.0,
-                        depth: 1000.0,
-                    },
-                );*/
-                /*camera = self.player.get_camera();
+                
+               camera = self.player.get_camera();
                 camera.projection = camera::Projection::Orthographic {
                         width: 1000.0,
                         depth: 1000.0,
-                    };*/
-                     camera = Camera {
+                    };
+                 /*
+                 camera = Camera {
     transform: Similarity3 {
         translation: Vec3 {
-            x: -0.0,
-            y: -1.1896458,
-            z: 1.6077139,
+            x: -9.704238,
+            y: -12.837725,
+            z: -61.288933,
         },
         rotation: Rotor3 {
-            s: 0.027270082,
+            s: 0.9961852,
             bv: Bivec3 {
-                xy: -0.4498885,
-                xz: -0.89256245,
-                yz: 0.013743621,
+                xy: -0.00042286396,
+                xz: -0.0043468,
+                yz: 0.08715478,
             },
         },
         scale: 1.0,
     },
     ratio: 1.3333334,
-    projection: camera::Projection::Orthographic {
+    projection: Orthographic {
         width: 1000.0,
         depth: 1000.0,
     },
 }
+                 */ 
 
-
-                /*camera = Camera::look_at(
-                    Vec3::new(0.0, 500.0, 0.0),
-                    Vec3::new(0.0, 0.0, 0.0),
-                    -Vec3::unit_z(),
-                    camera::Projection::Orthographic {
-                        width: 1000.0,
-                        depth: 1000.0,
-                    },
-                );*/
             }
         }
         dbg!(camera);
@@ -357,9 +331,9 @@ fn main() -> Result<()> {
     let king = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
     //let texture = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
     stuff.textures.push(Sprite {
-        trf: Isometry3::new(Vec3::new(20.0, 5.0, -10.0), Rotor3::identity()),
-        size: Vec2::new(100.0, 100.0),
-        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        trf: Isometry3::new(Vec3::new(20.0, 50.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(1024.0, 720.0),
+        cel: Rect::new(0.0, 0.0, 0.5, 0.25),
         tex: king,
     });
 

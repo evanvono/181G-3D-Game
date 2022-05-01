@@ -92,16 +92,14 @@ impl Renderer {
 // instance data
 layout(location = 0) in mat4 model;
 layout(location = 4) in vec4 size_uv;
-
 // outputs
 layout(location = 0) out vec2 out_uv;
-
 // uniforms
 layout(set=0, binding=0) uniform BatchData { mat4 viewproj; };
-
 void main() {
   float w = size_uv.x;
   float h = size_uv.y;
+  vec2 uv = size_uv.zw;
   // 0: TL, 1: BL, 2: BR, 3: TR
   vec2 posns[] = {
     vec2(-0.5, 0.5),
@@ -111,7 +109,7 @@ void main() {
   };
   vec2 pos = posns[gl_VertexIndex].xy;
   gl_Position = viewproj * model * vec4(pos.xy, 0.0, 1.0);
-  out_uv = vec2(size_uv.z,1.0-size_uv.w) + vec2(size_uv.x*(pos.x+0.5),size_uv.y*(1.0-(pos.y+0.5)));
+  out_uv = vec2(uv.x+(pos.x+0.5)*w,1.0-(uv.y+(pos.y+0.5)*h));
 }
 "
             }
@@ -123,10 +121,9 @@ void main() {
                 src: "
                 #version 450
 
-                layout(set = 1, binding = 0) uniform sampler2D tex;
+               layout(set = 1, binding = 0) uniform sampler2D tex;
                 layout(location = 0) in vec2 uv;
                 layout(location = 0) out vec4 f_color;
-
                 void main() {
                     vec4 col = texture(tex, uv);
                     //col = vec4(1.0, 1.0, 0.0, 1.0);
@@ -152,7 +149,7 @@ void main() {
             .fragment_shader(fs.entry_point("main").unwrap(), ())
             .rasterization_state(
                 RasterizationState::new()
-                    .cull_mode(vulkano::pipeline::graphics::rasterization::CullMode::None)
+                    .cull_mode(vulkano::pipeline::graphics::rasterization::CullMode::Back)
                     .front_face(
                         vulkano::pipeline::graphics::rasterization::FrontFace::CounterClockwise,
                     ),

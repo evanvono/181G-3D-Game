@@ -188,19 +188,20 @@ impl engine::World for GameState {
                         depth: 1000.0,
                     };
                  /*
+                 for the first panel
                  camera = Camera {
     transform: Similarity3 {
         translation: Vec3 {
-            x: -9.704238,
-            y: -12.837725,
-            z: -61.288933,
+            x: 285.9119,
+            y: -2.0,
+            z: -75.11849,
         },
         rotation: Rotor3 {
-            s: 0.9961852,
+            s: 0.999229,
             bv: Bivec3 {
-                xy: -0.00042286396,
-                xz: -0.0043468,
-                yz: 0.08715478,
+                xy: -0.0,
+                xz: 0.03926036,
+                yz: 0.0,
             },
         },
         scale: 1.0,
@@ -211,6 +212,7 @@ impl engine::World for GameState {
         depth: 1000.0,
     },
 }
+
                  */ 
 
             }
@@ -229,34 +231,7 @@ impl engine::World for GameState {
                 //dbg!(s.trf);
                 rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
             }
-            /*for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
-                let regoin =  Rect{pos: Vec2::new(0.0, 0.0), sz: Vec2::new(480.0, 480.0)};
-                //let mut iso = Isometry3::identity();
-                /*
-                tested:
-                changing only rotation
-                changing just z translation
-                changing just x translation
-
-                changing z and x
-                chaning z and rotation
-                changing x and rotation
-
-                changing rotation, x and z
-                chanigng the above three and scale of rotor
-
-                */
-
-                /*iso.translation.z = 5.0;
-                iso.translation.x = 480.0;
-                iso.rotation.bv.xz = PI.to_radians();
-                iso.rotation.s = 200.0;*/
-                let iso = Isometry3::new(Vec3::new(20.0, 5.0, -10.0), Rotor3::identity());
-                //Isometry3::new(Vec3::new(1024.0/2.0, 720.0/2.0, 1.0), Rotor3::default());
-                dbg!(iso);
-
-                s.render_sprite(s_i, s.tex, FSprite::new(s.cel, s.trf, s.size));
-            }*/
+            
         }
         else{
             for (_, object) in self.stuff.objects.iter() {
@@ -328,24 +303,14 @@ fn main() -> Result<()> {
     });
 
     dbg!(stuff.flats[0].trf);
-    let king = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
+    let king = engine.load_texture(std::path::Path::new("content/comic_panel_1.png"))?;
     //let texture = engine.load_texture(std::path::Path::new("content/cutscene-pt1png.png"))?;
     stuff.textures.push(Sprite {
-        trf: Isometry3::new(Vec3::new(20.0, 50.0, 0.0), Rotor3::identity()),
-        size: Vec2::new(1024.0, 720.0),
-        cel: Rect::new(0.0, 0.0, 0.5, 0.25),
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
         tex: king,
     });
-
-    /*stuff.textures.push(Sprite {
-        trf: Isometry3::new(
-        Vec3::new(0.0, 0.0, 10.0),
-        Rotor3::identity(),
-    ),
-        size: Vec2::new(1024.0, 720.0),
-        cel: Rect::new(0.0, 0.0, 1024.0, 720.0),
-        tex: king,
-    });*/
 
     stuff.objects.insert(
         0,

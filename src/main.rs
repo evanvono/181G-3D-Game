@@ -315,7 +315,7 @@ fn main() -> Result<()> {
         model: flat_model,
     });
 
-    dbg!(stuff.flats[0].trf);
+    //dbg!(stuff.flats[0].trf);
     let intro = engine.load_texture(std::path::Path::new("content/comic_panel_1.png"))?;
     let bios = engine.load_texture(std::path::Path::new("content/comic_bios.png"))?;
     let news = engine.load_texture(std::path::Path::new("content/comic_news.png"))?;

@@ -218,8 +218,8 @@ impl Player {
     pub fn get_camera(&self) -> camera::Camera {
         let player_at = self.get_pos();
         let at = Vec3::new(player_at.x, PLAYER_HEIGHT, player_at.z);
-        dbg!(at);
-        dbg!(self.get_deg());
+        //dbg!(at);
+       // dbg!(self.get_deg());
         camera::Camera::look_at_degrees(at, Vec3::unit_y(), self.get_deg())
     }
 

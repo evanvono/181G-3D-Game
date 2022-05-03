@@ -34,7 +34,7 @@ const GOAL_CLUES: usize = 10;
 const START_ROOM: usize = 0;
 const PLAYER_MOVE_SPD: f32 = 0.25;
 const WIDTH: f32 = 1024.0;
-const CLUE_FOUND_MIN_PIXELS: u32 = 1000;
+const CLUE_FOUND_MIN_PIXELS: u32 = 4000;
 const ORIGIN: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 
 const TAKE_PIC: VirtualKeyCode = VirtualKeyCode::Space;
@@ -54,10 +54,10 @@ fn get_clues() -> Vec<ClueStuff> {
         ClueStuff{ asset: String::from("content/clues/fan.glb"), found_me: String::from("Huh, it looks like the ceiling fan fell down, and I think those are feathers among the debris..."), coords: Vec3::new(-18.418575,12.0,-196.45444), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
         ClueStuff{ asset: String::from("content/clues/bed.glb"), found_me: String::from("A pretty simple bed for such a famous fowl."), coords: Vec3::new(-128.2365, 1.5, -116.138794), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
         ClueStuff{ asset: String::from("content/clues/flower-out.glb"), found_me: String::from("Didn't they just send out a flier to the neighborhood about toxic plants for pets…I think some of these were on there"), coords: Vec3::new(-98.629196,1.5,-120.80953), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
-        ClueStuff{ asset: String::from("content/clues/flower-in.glb"), found_me: String::from("Wow these flowers smell pretty strong, I think some of them are from the garden"), coords: Vec3::new(-11.0, 10.0, -109.594604), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
-        ClueStuff{ asset: String::from("content/clues/shower.glb"), found_me: String::from("I don't think birds take showers, but there's no bathtub either"), coords: Vec3::new(2.,2.0,12.), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 20.},
-        ClueStuff{ asset: String::from("content/clues/mirror.glb"), found_me: String::from("These mirrors make it hard to take pictures, I almost can't look anywhere without seeing a reflection"), coords: Vec3::new(46.970825,12.0,-186.90634), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
-        ClueStuff{ asset: String::from("content/clues/crystal.glb"), found_me: String::from("Whoops almost missed this, the Panther Crystal Award for Excellence in Mystery with a Message, presented to Cecil Cedric Coulson IV on behalf of 'Cecil Seeks the Truth'"), coords: Vec3::new(40.632133, 1.5, -119.08712), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/flower-in.glb"), found_me: String::from("Wow these flowers smell pretty strong, I think some of them are from the garden"), coords: Vec3::new(-11.0, 9.5, -109.594604), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/shower.glb"), found_me: String::from("I don't think birds take showers, but there's no bathtub either"), coords: Vec3::new(1.,2.0,12.), rotation: Rotor3::from_euler_angles(90.0f32.to_radians(),90.0f32.to_radians(), 180.0f32.to_radians()), scale: 30.},
+        ClueStuff{ asset: String::from("content/clues/mirror.glb"), found_me: String::from("These mirrors make it hard to take pictures, I almost can't look anywhere without seeing a reflection"), coords: Vec3::new(45.570825,11.,-188.90634), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 270.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/crystal.glb"), found_me: String::from("Whoops almost missed this, the Panther Crystal Award for Excellence in Mystery with a Message, presented to Cecil Cedric Coulson IV on behalf of 'Cecil Seeks the Truth'"), coords: Vec3::new(40.632133, 1.5, -119.08712), rotation: Rotor3::identity(), scale: 10.},
         ClueStuff{ asset: String::from("content/clues/bust.glb"), found_me: String::from("An animal bust which apparently was a gift from Scarlet Firefinn… interesting taste for an animal lover"), coords: Vec3::new(-53.680847, 1.5, -176.36743), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
         ClueStuff{ asset: String::from("content/clues/fridge.glb"), found_me: String::from("Lots of meat and poultry, I thought actors, animal advocates, and birds alike preferred salads."), coords: Vec3::new(-30.202045, 3.0, -129.64348), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
         ClueStuff{ asset: String::from("content/clues/grass.glb"), found_me: String::from("This grass is like a jungle, I think it's taller than Cecil!"), coords: Vec3::new(-114.653435,1.5,-145.70198), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
@@ -153,6 +153,7 @@ pub struct GameState {
     film_used: usize,
     prev_clues_found: [bool; NUM_CLUES],
     clues_found: [bool; NUM_CLUES],
+    num_clues_found: usize,
     goal_clues: usize,
     game_mode: GameMode,
     check_clues: bool,
@@ -174,6 +175,7 @@ impl GameState {
             film_used: 0,
             prev_clues_found: [false; NUM_CLUES],
             clues_found: [false; NUM_CLUES],
+            num_clues_found: 0,
             goal_clues,
             game_mode: GameMode::StartScene,
             check_clues: false,
@@ -321,11 +323,15 @@ impl engine::World for GameState {
             query_pool_results.iter().enumerate().for_each(|(index, num_pixels)| {
                 if *num_pixels >= CLUE_FOUND_MIN_PIXELS && !self.prev_clues_found[index] {
                     self.clues_found[index] = true;
+                    self.num_clues_found += 1;
                     let clues = get_clues();
                     println!{"{:?}", clues[index].found_me}
                 }
             });
+            println!{"---------------------------------------------------------------------"};
+            println! {"Clues found: {:?}", self.num_clues_found};
             println! {"Film remaining: {:?}", self.player.film_capacity - self.film_used };
+            println!{"====================================================================="};
             self.check_clues = false
         }
     }
@@ -477,6 +483,7 @@ fn main() -> Result<()> {
         )),
     );
 
+    println!{"\n\n\n-------------------------------------\nWelcome to the game!\n-------------------------------------\n\nInstructions\n------------\nTo play, navigate with arrow keys or WASD. Take photos of evidence with SPACEBAR. \nBut be careful! You have limited film!\n\n(All story panels can be navigated with ENTER)."};
 
     let game_state = GameState::new(stuff, START_ROOM, GOAL_CLUES);
     engine.play_world(game_state)

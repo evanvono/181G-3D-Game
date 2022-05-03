@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
 pub use ultraviolet::vec::{Vec2, Vec3};
-pub use ultraviolet::{Bivec3};
+pub use ultraviolet::Bivec3;
 use winit::event::VirtualKeyCode;
 
 mod anim_2d;
@@ -131,8 +131,7 @@ pub struct GameState {
     goal_clues: usize,
     game_mode: GameMode,
     check_clues: bool,
-    graphic_display: Vec<bool>,
-    displayed: usize,
+    display_texture: usize,
 }
 
 impl GameState {
@@ -152,9 +151,7 @@ impl GameState {
             goal_clues,
             game_mode: GameMode::StartScene,
             check_clues: false,
-            graphic_display: vec![true, false, false],
-            displayed: 0
-
+            display_texture: 0,
         }
     }
 }
@@ -164,26 +161,52 @@ impl engine::World for GameState {
         let player = &mut self.player;
         player.move_with_input(input);
 
-        if let GameMode::StartScene = self.game_mode {
-            if input.is_key_pressed(NEXT) && self.displayed >= 2{
-                self.game_mode = GameMode::GamePlay;
-                self.displayed = 0;
-                self.player.reset_player();
+        match self.game_mode {
+            GameMode::StartScene => {
+                if input.is_key_pressed(NEXT) {
+                    self.display_texture += 1;
+                    if self.display_texture >= 3 {
+                        self.game_mode = GameMode::GamePlay;
+                        self.player.reset_player();
+                    }
+                }
             }
-            else if input.is_key_pressed(NEXT){
-                self.graphic_display[self.displayed] = false;
-                self.displayed += 1;
-                self.graphic_display[self.displayed] = true;
+            GameMode::ClueDisplay => {
+                if self.display_texture == 5 {
+                    if input.is_key_pressed(VirtualKeyCode::Key4) {
+                        self.display_texture = 6;
+                    } else if input.is_key_pressed(VirtualKeyCode::Key3)
+                        || input.is_key_pressed(VirtualKeyCode::Key5)
+                        || input.is_key_pressed(VirtualKeyCode::Key6)
+                        || input.is_key_pressed(VirtualKeyCode::Key7)
+                        || input.is_key_pressed(VirtualKeyCode::Key8)
+                    {
+                        self.display_texture = 7;
+                    }
+                } else if input.is_key_pressed(NEXT) {
+                    self.display_texture += 1;
+                    if self.display_texture >= 7  {
+                        self.display_texture = 8;
+                        self.game_mode = GameMode::EndScene;
+                    }
+                }
             }
-        }
-
-        if let GameMode::GamePlay = self.game_mode{
-            if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity {
-            //self.game_mode = GameMode::ClueDisplay;
-            //self.player.pause_rotation();
-            self.check_clues = true;
-            self.film_used += 1;
-        }
+            GameMode::EndScene => {
+                if input.is_key_pressed(NEXT) && self.display_texture <= 9 {
+                    self.display_texture += 1;
+                }
+            }
+            GameMode::GamePlay => {
+                if input.is_key_pressed(TAKE_PIC) && self.film_used < self.player.film_capacity {
+                    //self.game_mode = GameMode::ClueDisplay;
+                    //self.player.pause_rotation();
+                    self.check_clues = true;
+                    self.film_used += 1;
+                }
+                if self.film_used >= self.player.film_capacity {
+                    self.game_mode = GameMode::ClueDisplay;
+                }
+            }
         }
     }
 
@@ -194,41 +217,39 @@ impl engine::World for GameState {
                 camera = self.player.get_camera();
             }
             _ => {
-                
-               /*camera = self.player.get_camera();
+                /*camera = self.player.get_camera();
                 camera.projection = camera::Projection::Orthographic {
                         width: 1000.0,
                         depth: 1000.0,
                     };*/
-                 
-                //for the first panel
-                 camera = Camera {
-    transform: Similarity3 {
-        translation: Vec3 {
-            x: 285.9119,
-            y: -2.0,
-            z: -75.11849,
-        },
-        rotation: Rotor3 {
-            s: 0.999229,
-            bv: Bivec3 {
-                xy: -0.0,
-                xz: 0.03926036,
-                yz: 0.0,
-            },
-        },
-        scale: 1.0,
-    },
-    ratio: 1.3333334,
-    projection: camera::Projection::Orthographic {
-        width: 1000.0,
-        depth: 1000.0,
-    },
-}
 
+                //for the first panel
+                camera = Camera {
+                    transform: Similarity3 {
+                        translation: Vec3 {
+                            x: 285.9119,
+                            y: -2.0,
+                            z: -75.11849,
+                        },
+                        rotation: Rotor3 {
+                            s: 0.999229,
+                            bv: Bivec3 {
+                                xy: -0.0,
+                                xz: 0.03926036,
+                                yz: 0.0,
+                            },
+                        },
+                        scale: 1.0,
+                    },
+                    ratio: 1.3333334,
+                    projection: camera::Projection::Orthographic {
+                        width: 1000.0,
+                        depth: 1000.0,
+                    },
+                }
             }
         }
-        
+
         rs.set_camera(camera);
 
         // for (obj_i, obj) in self.things.iter_mut().enumerate() {
@@ -237,34 +258,34 @@ impl engine::World for GameState {
 
         // dbg!(self.game_mode.clone());
 
-        if let GameMode::StartScene = self.game_mode {
-            for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
-                //dbg!(s.trf);
-                if self.graphic_display[s_i]{
-                    rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
+        match self.game_mode {
+            GameMode::GamePlay => {
+                for (_, object) in self.stuff.objects.iter() {
+                    match object.get_renderable() {
+                        Some(RenderType::Flat(id)) => {
+                            let m = self.stuff.flats.get(id).unwrap();
+                            rs.render_flat(m.model.clone(), m.trf, id); // id is the key
+                        }
+                        Some(RenderType::Textured(id)) => {
+                            let t = self.stuff.textured.get(id).unwrap();
+                            rs.render_textured(t.model.clone(), t.trf, id);
+                        }
+                        Some(RenderType::Sprite(id)) => (),
+                        // {
+                        //     let s = self.stuff.sprites.get(id).unwrap();
+                        //     rs.render_sprite(s.tex, s.cel, s.trf, s.size, id);
+                        // }
+                        None => (),
+                    }
+                }
+            },
+            _ => {
+                for (s_i, s) in self.stuff.textures.iter_mut().enumerate() {
+                    if s_i == self.display_texture{
+                        rs.render_sprite(s.tex, s.cel, s.trf, s.size, s_i);
+                    }
                 }
             }
-            
-        }
-        else{
-            for (_, object) in self.stuff.objects.iter() {
-            match object.get_renderable() {
-                Some(RenderType::Flat(id)) => {
-                    let m = self.stuff.flats.get(id).unwrap();
-                    rs.render_flat(m.model.clone(), m.trf, id); // id is the key
-                }
-                Some(RenderType::Textured(id)) => {
-                    let t = self.stuff.textured.get(id).unwrap();
-                    rs.render_textured(t.model.clone(), t.trf, id);
-                }
-                Some(RenderType::Sprite(id)) => (),
-                // {
-                //     let s = self.stuff.sprites.get(id).unwrap();
-                //     rs.render_sprite(s.tex, s.cel, s.trf, s.size, id);
-                // }
-                None => (),
-            }
-        }
         }
     }
 
@@ -319,6 +340,15 @@ fn main() -> Result<()> {
     let intro = engine.load_texture(std::path::Path::new("content/comic_panel_1.png"))?;
     let bios = engine.load_texture(std::path::Path::new("content/comic_bios.png"))?;
     let news = engine.load_texture(std::path::Path::new("content/comic_news.png"))?;
+    let clues1 = engine.load_texture(std::path::Path::new("content/comic_clue_1.png"))?;
+    let clues2 = engine.load_texture(std::path::Path::new("content/comic_clue_2.png"))?;
+    let whodunnit = engine.load_texture(std::path::Path::new("content/comic_guess.png"))?;
+    let correct = engine.load_texture(std::path::Path::new("content/comic_guess_correct.png"))?;
+    let wrong = engine.load_texture(std::path::Path::new("content/comic_guess_wrong.png"))?;
+    let hap = engine.load_texture(std::path::Path::new("content/comic_what_happened.png"))?;
+    let hap1 = engine.load_texture(std::path::Path::new("content/comic_happened_1.png"))?;
+    let hap2 = engine.load_texture(std::path::Path::new("content/comic_happened_2.png"))?;
+
     stuff.textures.push(Sprite {
         trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
         size: Vec2::new(900.0, 500.0),
@@ -337,7 +367,54 @@ fn main() -> Result<()> {
         cel: Rect::new(0.0, 0.0, 1.0, 1.0),
         tex: bios,
     });
-     
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: clues1,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: clues2,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: whodunnit,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: correct,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: wrong,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: hap,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: hap1,
+    });
+    stuff.textures.push(Sprite {
+        trf: Isometry3::new(Vec3::new(-300.0, 0.0, 0.0), Rotor3::identity()),
+        size: Vec2::new(900.0, 500.0),
+        cel: Rect::new(0.0, 0.0, 1.0, 1.0),
+        tex: hap2,
+    });
 
     stuff.objects.insert(
         0,

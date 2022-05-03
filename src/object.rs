@@ -219,7 +219,7 @@ impl Player {
         let player_at = self.get_pos();
         let at = Vec3::new(player_at.x, PLAYER_HEIGHT, player_at.z);
         //dbg!(at);
-       // dbg!(self.get_deg());
+        // dbg!(self.get_deg());
         camera::Camera::look_at_degrees(at, Vec3::unit_y(), self.get_deg())
     }
 
@@ -244,16 +244,16 @@ impl Player {
         self.pause_rot = false;
     }
 
-    pub fn reset_player(&mut self){
+    pub fn reset_player(&mut self) {
         self.set_pos(self.default_pos);
         self.set_deg(self.default_deg);
     }
 
-    pub fn reset_pos(&mut self){
+    pub fn reset_pos(&mut self) {
         self.set_pos(self.default_pos);
     }
 
-    pub fn reset_deg(&mut self){
+    pub fn reset_deg(&mut self) {
         self.set_deg(self.default_deg);
     }
 

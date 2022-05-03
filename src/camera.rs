@@ -13,7 +13,7 @@ pub enum Projection {
 }
 impl Camera {
     pub fn look_at(eye: Vec3, at: Vec3, up: Vec3, proj: Projection) -> Camera {
-        dbg!(eye);
+        // dbg!(eye);
         let iso = Mat4::look_at(eye, at, up).into_isometry();
         Self::from_transform(Similarity3::new(iso.translation, iso.rotation, 1.0), proj)
     }

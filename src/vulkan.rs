@@ -34,7 +34,7 @@ pub struct Vulkan {
 
 impl Vulkan {
     pub fn new(wb: WindowBuilder, event_loop: &EventLoop<()>) -> Self {
-        dbg!(vulkano::Version::HEADER_VERSION);
+        // dbg!(vulkano::Version::HEADER_VERSION);
         let required_extensions = vulkano::instance::InstanceExtensions {
             ext_debug_report: true,
             ..vulkano_win::required_extensions()

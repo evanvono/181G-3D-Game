@@ -51,11 +51,14 @@ pub enum GameMode {
 
 fn get_clues() -> Vec<ClueStuff> {
     return vec![
-        ClueStuff{ asset: String::from("content/clues/fan.glb"), found_me: String::from("Huh, it looks like the ceiling fan fell down, and I think those are feathers among the debris..."), coords: Vec3::new(-18.418575,12.0,-196.45444), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/fan.glb"), found_me: String::from("Huh, it looks like the ceiling fan fell down, and I think those are feathers among the debris..."), coords: Vec3::new(-18.418575,12.0,-196.45444), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 3.1},
         ClueStuff{ asset: String::from("content/clues/bed.glb"), found_me: String::from("A pretty simple bed for such a famous fowl."), coords: Vec3::new(-128.2365, 1.5, -116.138794), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
         ClueStuff{ asset: String::from("content/clues/flower-out.glb"), found_me: String::from("Didn't they just send out a flier to the neighborhood about toxic plants for pets…I think some of these were on there"), coords: Vec3::new(-98.629196,1.5,-120.80953), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
-        ClueStuff{ asset: String::from("content/clues/flower-in.glb"), found_me: String::from("Wow these flowers smell pretty strong, I think some of them are from the garden"), coords: Vec3::new(-11.0, 9.5, -109.594604), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
-        ClueStuff{ asset: String::from("content/clues/shower.glb"), found_me: String::from("I don't think birds take showers, but there's no bathtub either"), coords: Vec3::new(1.,2.0,12.), rotation: Rotor3::from_euler_angles(90.0f32.to_radians(),90.0f32.to_radians(), 180.0f32.to_radians()), scale: 30.},
+        ClueStuff{ asset: String::from("content/clues/flower-in.glb"), found_me: String::from("Wow these flowers smell pretty strong, I think some of them are from the garden"), coords: Vec3::new(-11.0, 9.5, -109.594604), rotation: Rotor3::from_euler_angles(0.0f32.to_radians(),90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
+
+        // ClueStuff{ asset: String::from("content/clues/shower.glb"), found_me: String::from("I don't think birds take showers, but there's no bathtub either"), coords: Vec3::new(1.,2.0,12.), rotation: Rotor3::from_euler_angles(90.0f32.to_radians(),90.0f32.to_radians(), 90.0f32.to_radians()), scale: 30.},
+        // ClueStuff{ asset: String::from("content/clues/shower.glb"), found_me: String::from("I don't think birds take showers, but there's no bathtub either"), coords: Vec3::new(1.,2.0,12.), rotation: Rotor3::from_euler_angles(90.0f32.to_radians(),180.0f32.to_radians(), 90.0f32.to_radians()), scale: 30.},
+
         ClueStuff{ asset: String::from("content/clues/mirror.glb"), found_me: String::from("These mirrors make it hard to take pictures, I almost can't look anywhere without seeing a reflection"), coords: Vec3::new(45.570825,11.,-188.90634), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 270.0f32.to_radians()), scale: 2.8},
         ClueStuff{ asset: String::from("content/clues/crystal.glb"), found_me: String::from("Whoops almost missed this, the Panther Crystal Award for Excellence in Mystery with a Message, presented to Cecil Cedric Coulson IV on behalf of 'Cecil Seeks the Truth'"), coords: Vec3::new(40.632133, 1.5, -119.08712), rotation: Rotor3::identity(), scale: 10.},
         ClueStuff{ asset: String::from("content/clues/bust.glb"), found_me: String::from("An animal bust which apparently was a gift from Scarlet Firefinn… interesting taste for an animal lover"), coords: Vec3::new(-53.680847, 1.5, -176.36743), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
@@ -138,7 +141,7 @@ impl GameStuff {
 
 pub fn player_vol() -> types::RPrism {
     types::RPrism {
-        pos: Vec3::new(0.0, 0.0, 0.0),
+        pos: Vec3::new(4.0, 0.0, 2.0),
         sz: Vec3::new(2.0, 2.0, 2.0),
     }
 }
@@ -345,7 +348,7 @@ fn main() -> Result<()> {
     let mut engine: Engine = Engine::new(WindowSettings::default(), DT);
 
     let camera = camera::Camera::look_at(
-        Vec3::new(0., -2., -10.),
+        Vec3::new(0., -2., -8.),
         Vec3::zero(),
         Vec3::unit_y(),
         camera::Projection::Perspective { fov: PI / 2.0 },

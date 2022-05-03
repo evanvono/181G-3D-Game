@@ -18,7 +18,7 @@ impl Rect {
             pos: Vec2::new(x, y),
             sz: Vec2::new(w, h),
         }
-    }
+    } 
     pub fn contains(&self, other: Rect) -> bool {
         let br = self.pos + self.sz;
         let obr = other.pos + other.sz;

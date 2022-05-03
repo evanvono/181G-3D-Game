@@ -2,6 +2,7 @@ pub mod flat;
 pub mod skinned;
 pub mod sprites;
 pub mod textured;
+use frenderer::types::Interpolate;
 use crate::animation;
 use crate::assets;
 use crate::camera::Camera;

@@ -48,6 +48,30 @@ pub enum GameMode {
     ClueDisplay,
     EndScene,
 }
+
+fn get_clues() -> Vec<ClueStuff> {
+    return vec![
+        ClueStuff{ asset: String::from("content/clues/fan.glb"), found_me: String::from("Huh, it looks like the ceiling fan fell down, and I think those are feathers among the debris..."), coords: Vec3::new(-18.418575,12.0,-196.45444), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/bed.glb"), found_me: String::from("A pretty simple bed for such a famous fowl."), coords: Vec3::new(-128.2365, 1.5, -116.138794), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/flower-out.glb"), found_me: String::from("Didn't they just send out a flier to the neighborhood about toxic plants for pets…I think some of these were on there"), coords: Vec3::new(-98.629196,1.5,-120.80953), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/flower-in.glb"), found_me: String::from("Wow these flowers smell pretty strong, I think some of them are from the garden"), coords: Vec3::new(-11.0, 10.0, -109.594604), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/shower.glb"), found_me: String::from("I don't think birds take showers, but there's no bathtub either"), coords: Vec3::new(1.,2.0,12.), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/mirror.glb"), found_me: String::from("These mirrors make it hard to take pictures, I almost can't look anywhere without seeing a reflection"), coords: Vec3::new(46.970825,12.0,-186.90634), rotation: Rotor3::from_euler_angles(0.0,90.0f32.to_radians(), 90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/crystal.glb"), found_me: String::from("Whoops almost missed this, the Panther Crystal Award for Excellence in Mystery with a Message, presented to Cecil Cedric Coulson IV on behalf of 'Cecil Seeks the Truth'"), coords: Vec3::new(40.632133, 1.5, -119.08712), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/bust.glb"), found_me: String::from("An animal bust which apparently was a gift from Scarlet Firefinn… interesting taste for an animal lover"), coords: Vec3::new(-53.680847, 1.5, -176.36743), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/fridge.glb"), found_me: String::from("Lots of meat and poultry, I thought actors, animal advocates, and birds alike preferred salads."), coords: Vec3::new(-30.202045, 3.0, -129.64348), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+        ClueStuff{ asset: String::from("content/clues/grass.glb"), found_me: String::from("This grass is like a jungle, I think it's taller than Cecil!"), coords: Vec3::new(-114.653435,1.5,-145.70198), rotation: Rotor3::from_rotation_yz(90.0f32.to_radians()), scale: 2.8},
+    ];
+}
+
+struct ClueStuff {
+    asset: String,
+    found_me: String,
+    coords: Vec3,
+    rotation: Rotor3,
+    scale: f32
+}
+
 #[derive(Debug)]
 struct GenericGameThing {}
 impl engine::GameThing for GenericGameThing {}
@@ -127,6 +151,7 @@ pub struct GameState {
     current_room: usize,
     player: object::Player,
     film_used: usize,
+    prev_clues_found: [bool; NUM_CLUES],
     clues_found: [bool; NUM_CLUES],
     goal_clues: usize,
     game_mode: GameMode,
@@ -147,6 +172,7 @@ impl GameState {
                 PLAYER_MOVE_SPD,
             ), //this is temp CHANGE
             film_used: 0,
+            prev_clues_found: [false; NUM_CLUES],
             clues_found: [false; NUM_CLUES],
             goal_clues,
             game_mode: GameMode::StartScene,
@@ -291,10 +317,12 @@ impl engine::World for GameState {
 
     fn handle_query_pool_results(&mut self, query_pool_results: &[u32; NUM_CLUES]) {
         if self.check_clues {
+            self.prev_clues_found = self.clues_found;
             query_pool_results.iter().enumerate().for_each(|(index, num_pixels)| {
-                if *num_pixels >= CLUE_FOUND_MIN_PIXELS {
+                if *num_pixels >= CLUE_FOUND_MIN_PIXELS && !self.prev_clues_found[index] {
                     self.clues_found[index] = true;
-                    println!{"(Found clue #{:?}) Fascinating! I wonder if this is part of the crime...", index};
+                    let clues = get_clues();
+                    println!{"{:?}", clues[index].found_me}
                 }
             });
             println! {"Film remaining: {:?}", self.player.film_capacity - self.film_used };
@@ -326,14 +354,34 @@ fn main() -> Result<()> {
         textures: vec![],
     };
 
-    let flat_model = engine.load_flat(std::path::Path::new("content/livingroom.glb"))?;
+    let flat_model = engine.load_flat(std::path::Path::new("content/livingroom-base.glb"))?;
     stuff.flats.push(Flat {
         trf: Similarity3::new(
-            Vec3::new(0.0, 0.0, 10.0),
+            Vec3::new(0.0, 0.0, 0.0),
             Rotor3::from_rotation_yz(90.0f32.to_radians()),
             1.0,
         ),
         model: flat_model,
+    });
+
+    get_clues().iter().enumerate().for_each(|(index, clue)| {
+        let clue_model = engine.load_flat(std::path::Path::new(&clue.asset));
+        stuff.flats.push(Flat {
+            trf: Similarity3::new(clue.coords, clue.rotation, clue.scale),
+            model: clue_model.unwrap(),
+        });
+        stuff.objects.insert(
+            1 + index,
+            Box::new(Clue::new(
+                1 + index,
+                None,
+                RPrism {
+                    pos: clue.coords,
+                    sz: Vec3::new(0., 0., 0.),
+                },
+                RenderType::Flat(1 + index),
+            )),
+        );
     });
 
     //dbg!(stuff.flats[0].trf);
@@ -429,23 +477,6 @@ fn main() -> Result<()> {
         )),
     );
 
-    let clue_model = engine.load_flat(std::path::Path::new("content/detail_crystal.glb"))?;
-    stuff.flats.push(Flat {
-        trf: Similarity3::new(Vec3::new(-5., 5., 20.), Rotor3::identity(), 1.0),
-        model: clue_model,
-    });
-    stuff.objects.insert(
-        1,
-        Box::new(Clue::new(
-            1,
-            None,
-            RPrism {
-                pos: Vec3::new(-5., 5., 20.),
-                sz: Vec3::new(0., 0., 0.),
-            },
-            RenderType::Flat(1),
-        )),
-    );
 
     let game_state = GameState::new(stuff, START_ROOM, GOAL_CLUES);
     engine.play_world(game_state)

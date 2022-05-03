@@ -25,7 +25,7 @@ use vulkano::query::{
 };
 use vulkano::render_pass::Subpass;
 
-pub const NUM_CLUES: usize = 1;
+pub const NUM_CLUES: usize = 10;
 pub const OTHER_FLATS: usize = 1;
 
 #[derive(Clone, Debug)]
